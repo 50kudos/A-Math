@@ -21,9 +21,7 @@ update msg model =
 
 view : Model -> Html msg
 view model =
-    h1 []
-        [ text "Hello Elm program"
-        ]
+    h1 [] []
 
 
 main : Program Never Model msg
