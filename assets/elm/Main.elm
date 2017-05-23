@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Board
+import Item
 
 
 main : Program Never Model Msg
@@ -36,5 +37,9 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ Board.view |> map BoardMsg
+        [ Item.digit
+        , Item.tenDigit
+        , Item.operators
+        , Board.view |> map BoardMsg
+        , Item.myItems
         ]

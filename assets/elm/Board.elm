@@ -1,4 +1,4 @@
-module Board exposing (Msg(..), view)
+module Board exposing (Msg(..), view, tileSide)
 
 import Svg
 import Svg.Attributes as SvgAttrs
