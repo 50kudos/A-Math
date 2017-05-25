@@ -1,4 +1,4 @@
-module Board exposing (Msg(..), view, tileSide)
+module Board exposing (Msg(..), view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -49,19 +49,6 @@ board =
     , [ X1, E2, X1, X1, X1, P3, X1, X1, X1, P3, X1, X1, X1, E2, X1 ]
     , [ E3, X1, X1, P2, X1, X1, X1, E3, X1, X1, X1, P2, X1, X1, E3 ]
     ]
-
-
-tileSide : Int
-tileSide =
-    40
-
-
-boardSize : Int
-boardSize =
-    List.length board
-        |> toFloat
-        |> sqrt
-        |> round
 
 
 viewBoard : Int -> Int -> Multiplier -> Html Msg

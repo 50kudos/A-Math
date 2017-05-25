@@ -3,6 +3,7 @@ module Main exposing (main)
 import Html exposing (Html, div, map)
 import Html.Attributes exposing (class)
 import Board
+import Item
 
 
 main : Program Never Model Msg
@@ -37,5 +38,6 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "flex justify-center items-center min-vh-100 bg-dark-gray2" ]
-        [ Board.view |> map BoardMsg
+        [ Item.digit
+        , Board.view |> map BoardMsg
         ]
