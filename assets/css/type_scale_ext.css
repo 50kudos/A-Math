@@ -1,0 +1,16 @@
+/* Tachyoncss type-scale extention */
+
+.f8 { font-size: .5rem; }
+.f9 { font-size: .25rem; }
+@media screen and (min-width: 30em) {
+ .f8-ns { font-size: .5rem; }
+ .f9-ns { font-size: .25rem; }
+}
+@media screen and (min-width: 30em) and (max-width: 60em) {
+ .f8-m { font-size: .5rem; }
+ .f9-m { font-size: .25rem; }
+}
+@media screen and (min-width: 60em) {
+ .f8-l { font-size: .5rem; }
+ .f9-l { font-size: .25rem; }
+}

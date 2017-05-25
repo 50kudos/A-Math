@@ -1,8 +1,8 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Html exposing (..)
+import Html exposing (Html, div, map)
+import Html.Attributes exposing (class)
 import Board
-import Item
 
 
 main : Program Never Model Msg
@@ -36,10 +36,6 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ Item.digit
-        , Item.tenDigit
-        , Item.operators
-        , Board.view |> map BoardMsg
-        , Item.myItems
+    div [ class "flex justify-center" ]
+        [ Board.view |> map BoardMsg
         ]

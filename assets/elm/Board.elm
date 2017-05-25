@@ -1,8 +1,8 @@
 module Board exposing (Msg(..), view, tileSide)
 
-import Svg
-import Svg.Attributes as SvgAttrs
-import Svg.Events as SvgEvents
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 
 
 {- We define a board as a list of lists just because we want elm-format
@@ -31,7 +31,7 @@ type Msg
     = Index ( Int, Int )
 
 
-board : List Multiplier
+board : List (List Multiplier)
 board =
     [ [ E3, X1, X1, P2, X1, X1, X1, E3, X1, X1, X1, P2, X1, X1, E3 ]
     , [ X1, E2, X1, X1, X1, P3, X1, X1, X1, P3, X1, X1, X1, E2, X1 ]
@@ -49,7 +49,6 @@ board =
     , [ X1, E2, X1, X1, X1, P3, X1, X1, X1, P3, X1, X1, X1, E2, X1 ]
     , [ E3, X1, X1, P2, X1, X1, X1, E3, X1, X1, X1, P2, X1, X1, E3 ]
     ]
-        |> List.concat
 
 
 tileSide : Int
@@ -65,78 +64,50 @@ boardSize =
         |> round
 
 
-viewSvg : Int -> Multiplier -> Svg.Svg Msg
-viewSvg n multiplier =
+viewBoard : Int -> Int -> Multiplier -> Html Msg
+viewBoard i j multiplier =
     let
-        ( i, j ) =
-            ( (n // boardSize), (rem n boardSize) )
+        bonus : String -> List (Html Msg) -> Html Msg
+        bonus colour body =
+            div
+                [ class <| colour ++ " dtc tc ba b--light-gray"
+                , onClick <| Index ( i, j )
+                ]
+                [ div [ class "aspect-ratio aspect-ratio--1x1" ] body ]
 
-        xCenter =
-            toString (toFloat (j * tileSide) + (toFloat tileSide + 1) / 2)
-
-        rect_ =
-            \colour labelMiddle labelTop labelBottom ->
-                Svg.a [ SvgEvents.onClick (Index ( i, j )), SvgAttrs.style "cursor: pointer;" ]
-                    [ Svg.rect
-                        [ SvgAttrs.width (toString (tileSide - 1))
-                        , SvgAttrs.height (toString (tileSide - 1))
-                        , SvgAttrs.fill colour
-                        , SvgAttrs.x (toString (j * tileSide + 1))
-                        , SvgAttrs.y (toString (i * tileSide + 1))
-                        ]
-                        []
-                    , Svg.text_
-                        [ SvgAttrs.x xCenter
-                        , SvgAttrs.y (toString (i * tileSide + 5))
-                        , SvgAttrs.fill "black"
-                        , SvgAttrs.fontSize "7"
-                        , SvgAttrs.textAnchor "middle"
-                        , SvgAttrs.alignmentBaseline "hanging"
-                        ]
-                        [ Svg.text labelTop ]
-                    , Svg.text_
-                        [ SvgAttrs.x xCenter
-                        , SvgAttrs.y (toString (i * tileSide + tileSide // 2))
-                        , SvgAttrs.fill "black"
-                        , SvgAttrs.textAnchor "middle"
-                        , SvgAttrs.alignmentBaseline "central"
-                        ]
-                        [ Svg.text labelMiddle ]
-                    , Svg.text_
-                        [ SvgAttrs.x xCenter
-                        , SvgAttrs.y (toString ((i * tileSide - 5) + tileSide))
-                        , SvgAttrs.fill "black"
-                        , SvgAttrs.fontSize "7"
-                        , SvgAttrs.textAnchor "middle"
-                        , SvgAttrs.alignmentBaseline "baseline"
-                        ]
-                        [ Svg.text labelBottom ]
-                    ]
+        desc : String -> String -> String -> Html Msg
+        desc p1 p2 p3 =
+            div [ class "aspect-ratio--object flex flex-column justify-center" ]
+                [ p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p1 ]
+                , p [ class "db ma0 f6 f5-ns lh-solid" ] [ text p2 ]
+                , p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p3 ]
+                ]
     in
         case multiplier of
             E3 ->
-                rect_ "crimson" "3X" "TRIPPLE" "EQUATION"
+                bonus "bg-red" [ desc "TRIPPLE" "3X" "Equation" ]
 
             E2 ->
-                rect_ "gold" "2X" "DOUBLE" "EQUATION"
+                bonus "bg-yellow" [ desc "DOUBLE" "2X" "Equation" ]
 
             P3 ->
-                rect_ "dodgerblue" "3X" "TRIPPLE" "PIECE"
+                bonus "bg-blue" [ desc "TRIPPLE" "3X" "PIECE" ]
 
             P2 ->
-                rect_ "darkorange" "2X" "DOUBLE" "PIECE"
+                bonus "bg-orange" [ desc "DOUBLE" "2X" "PIECE" ]
 
             X1 ->
-                rect_ "darkgreen" "" "" ""
+                bonus "bg-navy" []
 
             X_ ->
-                rect_ "#333333" "" "" ""
+                bonus "bg-silver" []
 
 
-view : Svg.Svg Msg
+view : Html Msg
 view =
-    Svg.svg
-        [ SvgAttrs.width (toString (15 * tileSide))
-        , SvgAttrs.height (toString (15 * tileSide))
-        ]
-        (List.indexedMap viewSvg board)
+    let
+        row : Int -> List Multiplier -> Html Msg
+        row i slots =
+            div [ class "dt dt--fixed" ] (List.indexedMap (viewBoard i) slots)
+    in
+        section [ class "w-80-m w-40-l avenir" ] (List.indexedMap row board)
