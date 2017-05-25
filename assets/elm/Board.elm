@@ -70,7 +70,7 @@ viewBoard i j multiplier =
         bonus : String -> List (Html Msg) -> Html Msg
         bonus colour body =
             div
-                [ class <| colour ++ " dtc tc ba b--light-gray"
+                [ class <| colour ++ " dtc tc ba b--silver"
                 , onClick <| Index ( i, j )
                 ]
                 [ div [ class "aspect-ratio aspect-ratio--1x1" ] body ]
@@ -97,10 +97,10 @@ viewBoard i j multiplier =
                 bonus "bg-orange" [ desc "DOUBLE" "2X" "PIECE" ]
 
             X1 ->
-                bonus "bg-navy" []
+                bonus "bg-gray2" []
 
             X_ ->
-                bonus "bg-silver" []
+                bonus "bg-mid-gray2" []
 
 
 view : Html Msg

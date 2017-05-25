@@ -36,6 +36,6 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex justify-center" ]
+    div [ class "flex justify-center items-center min-vh-100 bg-dark-gray2" ]
         [ Board.view |> map BoardMsg
         ]

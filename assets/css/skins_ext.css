@@ -1,0 +1,22 @@
+/* Tachyoncss skins extention */
+
+:root {
+  --dark-gray2: #222a34;
+  --mid-gray2: #2c3643;
+  --gray2: #303b49;
+  --silver2: #99a9b3;
+}
+
+/* Text colors */
+
+.dark-gray2 { color: var(--dark-gray2); }
+.mid-gray2 { color: var(--mid-gray2); }
+.gray2 { color: var(--gray2); }
+.silver2 { color: var(--silver2); }
+
+/* Background colors */
+
+.bg-dark-gray2 { background-color: var(--dark-gray2); }
+.bg-mid-gray2 { background-color: var(--mid-gray2); }
+.bg-gray2 { background-color: var(--gray2); }
+.bg-silver2 { background-color:  var(--silver2); }
