@@ -3,6 +3,7 @@ module Board exposing (Msg(..), view)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Item
 
 
 {- We define a board as a list of lists just because we want elm-format
@@ -97,4 +98,7 @@ view =
         row i slots =
             div [ class "dt dt--fixed" ] (List.indexedMap (viewBoard i) slots)
     in
-        section [ class "w-80-m w-40-l avenir" ] (List.indexedMap row board)
+        section [ class "w-80-m w-40-l avenir" ]
+            [ div [ class "" ] (List.indexedMap row board)
+            , Item.myItems
+            ]

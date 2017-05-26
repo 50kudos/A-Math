@@ -1,1 +1,2 @@
-<div id="elm-program"></div>
+<div id="elm-program" class="flex items-center min-vh-100 bg-dark-gray2">
+</div>
