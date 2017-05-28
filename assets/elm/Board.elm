@@ -29,7 +29,7 @@ type Multiplier
 
 
 type Msg
-    = Index ( Int, Int )
+    = Index Int Int
 
 
 board : List (List Multiplier)
@@ -52,53 +52,48 @@ board =
     ]
 
 
-viewBoard : Int -> Int -> Multiplier -> Html Msg
-viewBoard i j multiplier =
+view : Item.Model -> Html Msg
+view items =
     let
-        bonus : String -> List (Html Msg) -> Html Msg
-        bonus colour body =
-            div
-                [ class <| colour ++ " dtc tc ba b--silver"
-                , onClick <| Index ( i, j )
-                ]
-                [ div [ class "aspect-ratio aspect-ratio--1x1" ] body ]
-
-        desc : String -> String -> String -> Html Msg
+        desc : String -> String -> String -> Html msg
         desc p1 p2 p3 =
             div [ class "aspect-ratio--object flex flex-column justify-center" ]
                 [ p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p1 ]
                 , p [ class "db ma0 f6 f5-ns lh-solid" ] [ text p2 ]
                 , p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p3 ]
                 ]
-    in
-        case multiplier of
-            E3 ->
-                bonus "bg-red" [ desc "TRIPPLE" "3X" "Equation" ]
 
-            E2 ->
-                bonus "bg-yellow" [ desc "DOUBLE" "2X" "Equation" ]
+        slot : Int -> Int -> String -> List (Html Msg) -> Html Msg
+        slot i j colour body =
+            div
+                [ class <| colour ++ " dtc tc ba b--silver"
+                , onClick <| Index i j
+                ]
+                [ div [ class "aspect-ratio aspect-ratio--1x1" ] body ]
 
-            P3 ->
-                bonus "bg-blue" [ desc "TRIPPLE" "3X" "PIECE" ]
+        viewSlot : Int -> Int -> Multiplier -> Html Msg
+        viewSlot i j multiplier =
+            case multiplier of
+                E3 ->
+                    slot i j "bg-red" [ desc "TRIPPLE" "3X" "Equation" ]
 
-            P2 ->
-                bonus "bg-orange" [ desc "DOUBLE" "2X" "PIECE" ]
+                E2 ->
+                    slot i j "bg-yellow" [ desc "DOUBLE" "2X" "Equation" ]
 
-            X1 ->
-                bonus "bg-gray2" []
+                P3 ->
+                    slot i j "bg-blue" [ desc "TRIPPLE" "3X" "PIECE" ]
 
-            X_ ->
-                bonus "bg-mid-gray2" []
+                P2 ->
+                    slot i j "bg-orange" [ desc "DOUBLE" "2X" "PIECE" ]
 
+                X1 ->
+                    slot i j "bg-gray2" []
 
-view : Item.Model -> Html Msg
-view items =
-    let
+                X_ ->
+                    slot i j "bg-mid-gray2" []
+
         row : Int -> List Multiplier -> Html Msg
-        row i slots =
-            div [ class "dt dt--fixed" ] (List.indexedMap (viewBoard i) slots)
+        row i cols =
+            div [ class "dt dt--fixed" ] (List.indexedMap (viewSlot i) cols)
     in
-        section [ class "w-80-m w-40-l" ]
-            [ div [ class "avenir" ] (List.indexedMap row board)
-            , Item.myItems items
-            ]
+        section [ class "avenir" ] (List.indexedMap row board)

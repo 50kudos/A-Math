@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (Html, div, map)
+import Html exposing (Html, div, map, section)
 import Html.Attributes exposing (class)
 import Board
 import Item
@@ -33,13 +33,16 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BoardMsg (Board.Index ( i, j )) ->
+        BoardMsg (Board.Index i j) ->
             model ! [ Cmd.none ]
 
         ItemMsg (Item.Fetch (Ok items)) ->
             { model | items = items } ! [ Cmd.none ]
 
         ItemMsg (Item.Fetch (Err _)) ->
+            model ! [ Cmd.none ]
+
+        ItemMsg (Item.Pick nth) ->
             model ! [ Cmd.none ]
 
 
@@ -52,5 +55,8 @@ view : Model -> Html Msg
 view model =
     div [ class "flex justify-center flex-wrap" ]
         [ Item.restItems model.items
-        , Board.view model.items |> map BoardMsg
+        , section [ class "w-80-m w-40-l" ]
+            [ Board.view model.items |> map BoardMsg
+            , Item.myItems model.items |> map ItemMsg
+            ]
         ]
