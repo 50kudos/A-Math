@@ -91,14 +91,14 @@ viewBoard i j multiplier =
                 bonus "bg-mid-gray2" []
 
 
-view : Html Msg
-view =
+view : Item.Model -> Html Msg
+view items =
     let
         row : Int -> List Multiplier -> Html Msg
         row i slots =
             div [ class "dt dt--fixed" ] (List.indexedMap (viewBoard i) slots)
     in
-        section [ class "w-80-m w-40-l avenir" ]
-            [ div [ class "" ] (List.indexedMap row board)
-            , Item.myItems
+        section [ class "w-80-m w-40-l" ]
+            [ div [ class "avenir" ] (List.indexedMap row board)
+            , Item.myItems items
             ]

@@ -104,7 +104,7 @@ defmodule AMath.Game do
 
   defp item_changeset(%Item{} = item, attrs) do
     item
-    |> cast(attrs, [])
+    |> cast(attrs, [:items])
     |> validate_required([])
   end
 end
