@@ -8,16 +8,22 @@ import Http
 
 
 type alias Model =
-    { myItems : List Item
-    , restItems : List Item
+    { myItems : List DeckItem
+    , restItems : List RestItem
+    , boardItems : List StageItem
     }
 
 
-type alias Item =
-    { item : String
-    , ea : Int
-    , point : Int
-    }
+type alias DeckItem =
+    { item : String, point : Int, picked : Bool }
+
+
+type alias RestItem =
+    { item : String, ea : Int }
+
+
+type alias StageItem =
+    { item : String, i : Int, j : Int }
 
 
 type Msg
@@ -28,19 +34,32 @@ type Msg
 getItems : Cmd Msg
 getItems =
     let
-        itemListDecoder : JD.Decoder (List Item)
-        itemListDecoder =
-            JD.list <|
-                JD.map3 Item
-                    (JD.field "item" JD.string)
-                    (JD.field "ea" JD.int)
-                    (JD.field "point" JD.int)
+        myItemsDecoder : JD.Decoder DeckItem
+        myItemsDecoder =
+            JD.map3 DeckItem
+                (JD.field "item" JD.string)
+                (JD.field "point" JD.int)
+                (JD.succeed False)
+
+        restItemsDecoder : JD.Decoder RestItem
+        restItemsDecoder =
+            JD.map2 RestItem
+                (JD.field "item" JD.string)
+                (JD.field "ea" JD.int)
+
+        boardItemsDecoder : JD.Decoder StageItem
+        boardItemsDecoder =
+            JD.map3 StageItem
+                (JD.field "item" JD.string)
+                (JD.field "i" JD.int)
+                (JD.field "j" JD.int)
 
         decoder : JD.Decoder Model
         decoder =
-            JD.map2 Model
-                (JD.at [ "myItems" ] itemListDecoder)
-                (JD.at [ "restItems" ] itemListDecoder)
+            JD.map3 Model
+                (JD.at [ "myItems" ] <| JD.list myItemsDecoder)
+                (JD.at [ "restItems" ] <| JD.list restItemsDecoder)
+                (JD.at [ "boardItems" ] <| JD.list boardItemsDecoder)
     in
         Http.send Fetch <|
             Http.get "http://localhost:4000/api/items/3" decoder
@@ -49,7 +68,7 @@ getItems =
 myItems : Model -> Html Msg
 myItems model =
     let
-        tile : Int -> Item -> Html Msg
+        tile : Int -> DeckItem -> Html Msg
         tile nth item =
             div
                 [ class <| xy_center ++ " bg-dark-blue light-gray mh1 w2 h2 pointer relative"
@@ -66,7 +85,7 @@ myItems model =
 restItems : Model -> Html msg
 restItems model =
     let
-        tile : Item -> Html msg
+        tile : RestItem -> Html msg
         tile item =
             div [ class <| "mb1 " ++ xy_center ]
                 [ div [ class <| "bg-dark-blue light-gray w2 h2 " ++ xy_center ]
@@ -82,7 +101,9 @@ restItems model =
 
 
 
--- Helper functions
+-- Helper functions:
+-- Functions in this section are used more than once. Any helper function that
+-- is only used once still live in the let block of a certain function.
 
 
 xy_center : String

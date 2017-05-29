@@ -27,7 +27,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    Model (Item.Model [] []) ! [ Item.getItems |> Cmd.map ItemMsg ]
+    Model (Item.Model [] [] []) ! [ Item.getItems |> Cmd.map ItemMsg ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
