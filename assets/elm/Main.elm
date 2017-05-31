@@ -27,7 +27,9 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    Model (Item.Model [] [] []) ! [ Item.getItems |> Cmd.map ItemMsg ]
+    Model (Item.Model [] [] [])
+        ! [ Item.getItems |> Cmd.map ItemMsg
+          ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -39,11 +41,11 @@ update msg model =
         ItemMsg (Item.Fetch (Ok items)) ->
             { model | items = items } ! [ Cmd.none ]
 
-        ItemMsg (Item.Fetch (Err _)) ->
-            model ! [ Cmd.none ]
+        ItemMsg (Item.Fetch (Err thing)) ->
+            Debug.log (toString thing) model ! [ Cmd.none ]
 
-        ItemMsg (Item.Pick nth) ->
-            model ! [ Cmd.none ]
+        ItemMsg (Item.Pick updateDeck) ->
+            { model | items = updateDeck model.items } ! [ Cmd.none ]
 
 
 subscriptions : Model -> Sub Msg
@@ -56,7 +58,7 @@ view model =
     div [ class "flex justify-center flex-wrap" ]
         [ Item.restItems model.items
         , section [ class "w-80-m w-40-l" ]
-            [ Board.view model.items |> map BoardMsg
-            , Item.myItems model.items |> map ItemMsg
+            [ Board.view BoardMsg
+            , Item.myItems model.items ItemMsg
             ]
         ]

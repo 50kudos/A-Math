@@ -9,13 +9,17 @@ defmodule AMath.Web.ItemView do
   def render("show.json", %{state: data}) do
     %{
       boardItems: render_many(data["boardItems"], ItemView, "board_item.json"),
-      myItems: render_many(data["myItems"], ItemView, "item.json"),
+      myItems: render_many(data["myItems"], ItemView, "my_item.json"),
       restItems: render_many(data["restItems"], ItemView, "item.json")
     }
   end
 
   def render("item.json", %{item: item}) do
     %{item: item["item"], ea: item["ea"], point: item["point"]}
+  end
+  
+  def render("my_item.json", %{item: item}) do
+    %{item: item["item"], id: item["id"], point: item["point"]}
   end
   
   def render("board_item.json", %{item: item}) do

@@ -1,22 +1,8 @@
 module Board exposing (Msg(..), view)
 
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Item
-
-
-{- We define a board as a list of lists just because we want elm-format
-   not to wrap elements to eternity. We sacrifice on performance a little.
-
-   Board Data
-   E3: 3X where X is a equation score
-   E2: 2X where X is a equation score
-   P3: 3X where X is a piece score
-   P2: 2X where X is a piece score
-   X1: identity score
-   X_: The star (also identity score)
--}
 
 
 type Multiplier
@@ -52,10 +38,10 @@ board =
     ]
 
 
-view : Item.Model -> Html Msg
-view items =
+view : (Msg -> msg) -> Html msg
+view toMsg =
     let
-        desc : String -> String -> String -> Html msg
+        desc : String -> String -> String -> Html Msg
         desc p1 p2 p3 =
             div [ class "aspect-ratio--object flex flex-column justify-center" ]
                 [ p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p1 ]
@@ -96,4 +82,5 @@ view items =
         row i cols =
             div [ class "dt dt--fixed" ] (List.indexedMap (viewSlot i) cols)
     in
-        section [ class "avenir" ] (List.indexedMap row board)
+        map toMsg <|
+            section [ class "avenir" ] (List.indexedMap row board)

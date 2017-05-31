@@ -21,14 +21,14 @@ example_data =
         %{item: "2", i: 7, j: 8}
       ],
       myItems: [
-        %{item: "10", ea: 1, point: 3},
-        %{item: "-", ea: 1, point: 2},
-        %{item: "=", ea: 1, point: 1},
-        %{item: "=", ea: 1, point: 1},
-        %{item: "1", ea: 1, point: 1},
-        %{item: "2", ea: 1, point: 1},
-        %{item: "0", ea: 1, point: 1},
-        %{item: "9", ea: 1, point: 2}
+        %{item: "10", id: 1, point: 3},
+        %{item: "-", id: 2, point: 2},
+        %{item: "=", id: 3, point: 1},
+        %{item: "=", id: 4, point: 1},
+        %{item: "1", id: 5, point: 1},
+        %{item: "2", id: 6, point: 1},
+        %{item: "0", id: 7, point: 1},
+        %{item: "9", id: 8, point: 2}
       ],
       restItems: [
         %{item: "0", ea: 4, point: 1},
