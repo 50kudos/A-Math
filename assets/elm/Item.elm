@@ -1,4 +1,4 @@
-module Item exposing (Model, Msg(..), myItems, restItems, getItems)
+module Item exposing (Model, Msg(..), myItems, restItems, getItems, update)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -29,7 +29,7 @@ type alias StageItem =
 
 type Msg
     = Fetch (Result Http.Error Model)
-    | Pick (Model -> Model)
+    | Pick Int
 
 
 getItems : Cmd Msg
@@ -66,7 +66,20 @@ getItems =
             Http.get "http://localhost:4000/api/items/3" decoder
 
 
-updateDeck : Int -> Model -> Model
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        Fetch (Ok items) ->
+            { model | myItems = items.myItems }
+
+        Fetch (Err error) ->
+            Debug.log (toString error) model
+
+        Pick int ->
+            { model | myItems = updateDeck int model }
+
+
+updateDeck : Int -> Model -> List DeckItem
 updateDeck target model =
     let
         handlePick : Int -> DeckItem -> DeckItem
@@ -81,21 +94,19 @@ updateDeck target model =
                 ( True, False ) ->
                     { item | picked = True }
     in
-        { model
-            | myItems =
-                case List.Extra.findIndices .picked model.myItems of
-                    [] ->
-                        List.indexedMap handlePick model.myItems
+        case List.Extra.findIndices .picked model.myItems of
+            [] ->
+                model.myItems
+                    |> List.indexedMap handlePick
 
-                    [ prevPicked ] ->
-                        model.myItems
-                            |> List.Extra.swapAt prevPicked target
-                            |> Maybe.withDefault model.myItems
-                            |> List.map (\item -> { item | picked = False })
+            [ prevPicked ] ->
+                model.myItems
+                    |> List.Extra.swapAt prevPicked target
+                    |> Maybe.withDefault model.myItems
+                    |> List.map (\item -> { item | picked = False })
 
-                    _ ->
-                        model.myItems
-        }
+            _ ->
+                model.myItems
 
 
 myItems : Model -> (Msg -> msg) -> Html msg
@@ -115,7 +126,7 @@ myItems { myItems } toMsg =
                     "bg-dark-blue light-gray mh1 w2 h2 pointer relative"
                         ++ xy_center
                         ++ isPick item
-                , onClick (Pick <| updateDeck nth)
+                , onClick (Pick nth)
                 ]
                 [ span [] [ text item.item ]
                 , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]

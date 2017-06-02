@@ -38,14 +38,8 @@ update msg model =
         BoardMsg (Board.Index i j) ->
             model ! [ Cmd.none ]
 
-        ItemMsg (Item.Fetch (Ok items)) ->
-            { model | items = items } ! [ Cmd.none ]
-
-        ItemMsg (Item.Fetch (Err thing)) ->
-            Debug.log (toString thing) model ! [ Cmd.none ]
-
-        ItemMsg (Item.Pick updateDeck) ->
-            { model | items = updateDeck model.items } ! [ Cmd.none ]
+        ItemMsg msg ->
+            { model | items = Item.update msg model.items } ! [ Cmd.none ]
 
 
 subscriptions : Model -> Sub Msg
