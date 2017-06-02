@@ -1,9 +1,8 @@
-module Item exposing (Model, Msg(..), myItems, restItems, getItems, update)
+module Item exposing (Model, Msg(..), myItems, restItems, update, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Http
 import Json.Decode as JD
 import List.Extra
 
@@ -28,12 +27,11 @@ type alias StageItem =
 
 
 type Msg
-    = Fetch (Result Http.Error Model)
-    | Pick Int
+    = Pick Int
 
 
-getItems : Cmd Msg
-getItems =
+decoder : JD.Decoder Model
+decoder =
     let
         myItemsDecoder : JD.Decoder DeckItem
         myItemsDecoder =
@@ -54,27 +52,16 @@ getItems =
                 (JD.field "item" JD.string)
                 (JD.field "i" JD.int)
                 (JD.field "j" JD.int)
-
-        decoder : JD.Decoder Model
-        decoder =
-            JD.map3 Model
-                (JD.at [ "myItems" ] <| JD.list myItemsDecoder)
-                (JD.at [ "restItems" ] <| JD.list restItemsDecoder)
-                (JD.at [ "boardItems" ] <| JD.list boardItemsDecoder)
     in
-        Http.send Fetch <|
-            Http.get "http://localhost:4000/api/items/3" decoder
+        JD.map3 Model
+            (JD.at [ "myItems" ] <| JD.list myItemsDecoder)
+            (JD.at [ "restItems" ] <| JD.list restItemsDecoder)
+            (JD.at [ "boardItems" ] <| JD.list boardItemsDecoder)
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        Fetch (Ok items) ->
-            { model | myItems = items.myItems }
-
-        Fetch (Err error) ->
-            Debug.log (toString error) model
-
         Pick int ->
             { model | myItems = updateDeck int model }
 

@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Html exposing (Html, div, map, section)
 import Html.Attributes exposing (class)
+import Game
 import Board
 import Item
 
@@ -23,12 +24,13 @@ type alias Model =
 type Msg
     = BoardMsg Board.Msg
     | ItemMsg Item.Msg
+    | GameMsg Game.Msg
 
 
 init : ( Model, Cmd Msg )
 init =
     Model (Item.Model [] [] [])
-        ! [ Item.getItems |> Cmd.map ItemMsg
+        ! [ Game.getItems |> Cmd.map GameMsg
           ]
 
 
@@ -40,6 +42,9 @@ update msg model =
 
         ItemMsg msg ->
             { model | items = Item.update msg model.items } ! [ Cmd.none ]
+
+        GameMsg msg ->
+            { model | items = Game.update msg model.items } ! [ Cmd.none ]
 
 
 subscriptions : Model -> Sub Msg
