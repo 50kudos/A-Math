@@ -1,4 +1,4 @@
-module Item exposing (Model, Msg(..), myItems, restItems, update, decoder)
+module Item exposing (Model, Msg, init, update, myItems, restItems, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -28,6 +28,11 @@ type alias StageItem =
 
 type Msg
     = Pick Int
+
+
+init : Model
+init =
+    Model [] [] []
 
 
 decoder : JD.Decoder Model
