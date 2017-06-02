@@ -6,6 +6,7 @@ import Html exposing (Html, div, map, section)
 import Html.Attributes exposing (class)
 import Http
 import Json.Decode as JD
+import List.Extra
 
 
 type alias Model =
@@ -46,7 +47,7 @@ view model =
     div [ class "flex justify-center flex-wrap" ]
         [ Item.restItems model.items
         , section [ class "w-80-m w-40-l" ]
-            [ Board.view BoardMsg
+            [ Board.view model.board BoardMsg
             , Item.myItems model.items ItemMsg
             ]
         ]

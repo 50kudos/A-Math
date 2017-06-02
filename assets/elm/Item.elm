@@ -5,6 +5,7 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Decode as JD
 import List.Extra
+import Helper as H
 
 
 type alias Model =
@@ -91,20 +92,13 @@ updateDeck target model =
 myItems : Model -> (Msg -> msg) -> Html msg
 myItems { myItems } toMsg =
     let
-        isPick : DeckItem -> String
-        isPick item =
-            if .picked item then
-                "top--1"
-            else
-                ""
-
         tile : Int -> DeckItem -> Html Msg
         tile nth item =
             div
                 [ class <|
-                    "bg-dark-blue light-gray mh1 w2 h2 pointer relative"
+                    H.pickable item
+                        ++ "mh1 w2 h2 pointer relative"
                         ++ xy_center
-                        ++ isPick item
                 , onClick (Pick nth)
                 ]
                 [ span [] [ text item.item ]

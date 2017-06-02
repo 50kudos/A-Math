@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (Html, map, div)
+import Html exposing (Html, map)
 import Game
 
 
