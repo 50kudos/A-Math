@@ -10,6 +10,7 @@ import Json.Decode as JD
 
 type alias Model =
     { items : Item.Model
+    , board : Board.Model
     }
 
 
@@ -21,12 +22,7 @@ type Msg
 
 init : Model
 init =
-    { items = Item.init }
-
-
-decoder : JD.Decoder Model
-decoder =
-    JD.map Model Item.decoder
+    Model Item.init Board.init
 
 
 update : Msg -> Model -> Model
@@ -35,20 +31,14 @@ update msg model =
         ItemMsg msg ->
             { model | items = Item.update msg model.items }
 
-        BoardMsg (Board.Index i j) ->
-            model
+        BoardMsg msg ->
+            { model | board = Board.update msg model.board }
 
         Fetch (Ok gameData) ->
-            { model | items = gameData.items }
+            { model | items = gameData.items, board = gameData.board }
 
         Fetch (Err error) ->
             Debug.log (toString error) model
-
-
-getItems : Cmd Msg
-getItems =
-    Http.send Fetch <|
-        Http.get "http://localhost:4000/api/items/3" decoder
 
 
 view : Model -> Html Msg
@@ -60,3 +50,16 @@ view model =
             , Item.myItems model.items ItemMsg
             ]
         ]
+
+
+decoder : JD.Decoder Model
+decoder =
+    JD.map2 Model
+        (Item.decoder)
+        (Board.decoder)
+
+
+getItems : Cmd Msg
+getItems =
+    Http.send Fetch <|
+        Http.get "http://localhost:4000/api/items/3" decoder

@@ -1,4 +1,4 @@
-module Item exposing (Model, Msg, init, update, myItems, restItems, decoder)
+module Item exposing (Model, Msg, init, update, decoder, myItems, restItems)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -10,7 +10,6 @@ import List.Extra
 type alias Model =
     { myItems : List DeckItem
     , restItems : List RestItem
-    , boardItems : List StageItem
     }
 
 
@@ -22,17 +21,13 @@ type alias RestItem =
     { item : String, ea : Int }
 
 
-type alias StageItem =
-    { item : String, i : Int, j : Int }
-
-
 type Msg
     = Pick Int
 
 
 init : Model
 init =
-    Model [] [] []
+    Model [] []
 
 
 decoder : JD.Decoder Model
@@ -50,18 +45,10 @@ decoder =
             JD.map2 RestItem
                 (JD.field "item" JD.string)
                 (JD.field "ea" JD.int)
-
-        boardItemsDecoder : JD.Decoder StageItem
-        boardItemsDecoder =
-            JD.map3 StageItem
-                (JD.field "item" JD.string)
-                (JD.field "i" JD.int)
-                (JD.field "j" JD.int)
     in
-        JD.map3 Model
+        JD.map2 Model
             (JD.at [ "myItems" ] <| JD.list myItemsDecoder)
             (JD.at [ "restItems" ] <| JD.list restItemsDecoder)
-            (JD.at [ "boardItems" ] <| JD.list boardItemsDecoder)
 
 
 update : Msg -> Model -> Model

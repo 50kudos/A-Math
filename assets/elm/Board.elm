@@ -1,8 +1,17 @@
-module Board exposing (Msg(..), view)
+module Board exposing (Model, Msg, init, update, view, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Json.Decode as JD
+
+
+type alias Model =
+    { boardItems : List StageItem }
+
+
+type alias StageItem =
+    { item : String, i : Int, j : Int }
 
 
 type Multiplier
@@ -16,6 +25,31 @@ type Multiplier
 
 type Msg
     = Index Int Int
+
+
+init : Model
+init =
+    Model []
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        Index int int2 ->
+            model
+
+
+decoder : JD.Decoder Model
+decoder =
+    let
+        boardItemsDecoder : JD.Decoder StageItem
+        boardItemsDecoder =
+            JD.map3 StageItem
+                (JD.field "item" JD.string)
+                (JD.field "i" JD.int)
+                (JD.field "j" JD.int)
+    in
+        JD.map Model (JD.at [ "boardItems" ] <| JD.list boardItemsDecoder)
 
 
 board : List (List Multiplier)
