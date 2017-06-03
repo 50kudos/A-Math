@@ -1,8 +1,8 @@
 module Helper exposing (..)
 
 
-pickable : { a | picked : Bool } -> String
-pickable item =
+colorByPick : { a | picked : Bool } -> String
+colorByPick item =
     if .picked item then
         " bg-light-gray dark-blue "
     else

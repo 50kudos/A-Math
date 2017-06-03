@@ -6,7 +6,6 @@ import Html exposing (Html, div, map, section)
 import Html.Attributes exposing (class)
 import Http
 import Json.Decode as JD
-import List.Extra
 
 
 type alias Model =
@@ -21,6 +20,11 @@ type Msg
     | BoardMsg Board.Msg
 
 
+type Move
+    = DeckToBoard String
+    | LocalMove
+
+
 init : Model
 init =
     Model Item.init Board.init
@@ -33,13 +37,37 @@ update msg model =
             { model | items = Item.update msg model.items }
 
         BoardMsg msg ->
-            { model | board = Board.update msg model.board }
+            case toMove model of
+                DeckToBoard item ->
+                    case Board.addItem msg item model.board of
+                        Ok board ->
+                            { model
+                                | board = board
+                                , items =
+                                    Item.hideMovedItem model.items
+                            }
+
+                        Err _ ->
+                            model
+
+                LocalMove ->
+                    { model | board = Board.update msg model.board }
 
         Fetch (Ok gameData) ->
             { model | items = gameData.items, board = gameData.board }
 
         Fetch (Err error) ->
             Debug.log (toString error) model
+
+
+toMove : Model -> Move
+toMove { items } =
+    case List.filter .picked items.myItems of
+        [ pickedItem ] ->
+            DeckToBoard pickedItem.item
+
+        _ ->
+            LocalMove
 
 
 view : Model -> Html Msg

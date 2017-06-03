@@ -1,4 +1,4 @@
-module Item exposing (Model, Msg, init, update, decoder, myItems, restItems)
+module Item exposing (Model, Msg, init, update, hideMovedItem, decoder, myItems, restItems)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -15,7 +15,7 @@ type alias Model =
 
 
 type alias DeckItem =
-    { item : String, point : Int, picked : Bool }
+    { item : String, point : Int, picked : Bool, moved : Bool }
 
 
 type alias RestItem =
@@ -24,6 +24,7 @@ type alias RestItem =
 
 type Msg
     = Pick Int
+    | Put Int
 
 
 init : Model
@@ -36,9 +37,10 @@ decoder =
     let
         myItemsDecoder : JD.Decoder DeckItem
         myItemsDecoder =
-            JD.map3 DeckItem
+            JD.map4 DeckItem
                 (JD.field "item" JD.string)
                 (JD.field "point" JD.int)
+                (JD.succeed False)
                 (JD.succeed False)
 
         restItemsDecoder : JD.Decoder RestItem
@@ -57,6 +59,9 @@ update msg model =
     case msg of
         Pick int ->
             { model | myItems = updateDeck int model }
+
+        Put int ->
+            model
 
 
 updateDeck : Int -> Model -> List DeckItem
@@ -89,21 +94,41 @@ updateDeck target model =
                 model.myItems
 
 
+hideMovedItem : Model -> Model
+hideMovedItem model =
+    let
+        hideItem : DeckItem -> DeckItem
+        hideItem item =
+            if item.picked then
+                { item | moved = True, picked = False }
+            else
+                item
+    in
+        { model | myItems = List.map hideItem model.myItems }
+
+
 myItems : Model -> (Msg -> msg) -> Html msg
 myItems { myItems } toMsg =
     let
         tile : Int -> DeckItem -> Html Msg
         tile nth item =
-            div
-                [ class <|
-                    H.pickable item
-                        ++ "mh1 w2 h2 pointer relative"
-                        ++ xy_center
-                , onClick (Pick nth)
-                ]
-                [ span [] [ text item.item ]
-                , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]
-                ]
+            if item.moved then
+                spacetile (Put nth)
+            else
+                div
+                    [ class <|
+                        H.colorByPick item
+                            ++ "mh1 w2 h2 pointer relative"
+                            ++ xy_center
+                    , onClick (Pick nth)
+                    ]
+                    [ span [] [ text item.item ]
+                    , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]
+                    ]
+
+        spacetile : Msg -> Html Msg
+        spacetile msg =
+            div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
         div [ class <| xy_center ++ " mv2 mv4-ns" ] (List.indexedMap tile myItems)
             |> map toMsg

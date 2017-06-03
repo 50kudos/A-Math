@@ -1,4 +1,4 @@
-module Board exposing (Model, Msg, init, update, view, decoder)
+module Board exposing (Model, Msg, init, update, addItem, view, decoder)
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -46,12 +46,20 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         Pick { i, j } ->
-            { model
-                | stagingItems =
-                    model.stagingItems
-                        |> List.Extra.updateIf (H.isAtIndex i j)
-                            (\item -> { item | picked = not item.picked })
-            }
+            let
+                shouldPick : { a | picked : Bool } -> Bool
+                shouldPick { picked } =
+                    if otherBeingPicked model i j then
+                        False
+                    else
+                        not picked
+            in
+                { model
+                    | stagingItems =
+                        model.stagingItems
+                            |> List.Extra.updateIf (H.isAtIndex i j)
+                                (\item -> { item | picked = shouldPick item })
+                }
 
         Put i j ->
             case List.partition .picked model.stagingItems of
@@ -67,6 +75,26 @@ update msg model =
 
         Nope ->
             model
+
+
+addItem : Msg -> String -> Model -> Result Model Model
+addItem msg item model =
+    case msg of
+        Put i j ->
+            Ok
+                { model
+                    | stagingItems =
+                        { item = item, i = i, j = j, picked = False } :: model.stagingItems
+                }
+
+        _ ->
+            Err model
+
+
+otherBeingPicked : Model -> Int -> Int -> Bool
+otherBeingPicked { stagingItems } i j =
+    stagingItems
+        |> List.any (\item -> not (H.isAtIndex i j item) && item.picked)
 
 
 board : List (List Multiplier)
@@ -118,7 +146,7 @@ view model toMsg =
                     case List.Extra.find (H.isAtIndex i j) model.stagingItems of
                         Just item ->
                             slot (Pick item)
-                                ((H.pickable item) ++ "pointer b--dark-blue")
+                                ((H.colorByPick item) ++ "pointer b--dark-blue")
                                 [ desc "" item.item "" ]
 
                         Nothing ->
