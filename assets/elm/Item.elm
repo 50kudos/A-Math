@@ -117,9 +117,8 @@ myItems { myItems } toMsg =
             else
                 div
                     [ class <|
-                        H.colorByPick item
-                            ++ "mh1 w2 h2 pointer relative"
-                            ++ xy_center
+                        "flex justify-center items-center mh1 w2 h2 pointer relative"
+                            ++ H.colorByPick item
                     , onClick (Pick nth)
                     ]
                     [ span [] [ text item.item ]
@@ -130,7 +129,8 @@ myItems { myItems } toMsg =
         spacetile msg =
             div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
-        div [ class <| xy_center ++ " mv2 mv4-ns" ] (List.indexedMap tile myItems)
+        List.indexedMap tile myItems
+            |> div [ class "flex justify-center items-center mv2 mv4-ns" ]
             |> map toMsg
 
 
@@ -139,25 +139,11 @@ restItems { restItems } =
     let
         tile : RestItem -> Html msg
         tile item =
-            div [ class <| "mb1 " ++ xy_center ]
-                [ div [ class <| "bg-dark-blue light-gray w2 h2 " ++ xy_center ]
+            div [ class "mb1 flex justify-center items-center" ]
+                [ div [ class "bg-dark-blue light-gray w2 h2 flex justify-center items-center" ]
                     [ text item.item ]
                 , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
                 ]
     in
-        section
-            [ class
-                "dn flex-ns flex-wrap flex-column-l mw5-l mb4 ph5 ph3-l w-100 vh-50-l"
-            ]
+        section [ class "dn flex-ns flex-wrap flex-column-l mw5-l mb4 ph5 ph3-l w-100 vh-50-l" ]
             (List.map tile restItems)
-
-
-
--- Helper functions:
--- Functions in this section are used more than once. Any helper function that
--- is only used once still live in the let block of a certain function.
-
-
-xy_center : String
-xy_center =
-    " flex justify-center items-center "
