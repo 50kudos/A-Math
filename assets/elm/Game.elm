@@ -20,9 +20,14 @@ type Msg
     | BoardMsg Board.Msg
 
 
-type Move
-    = DeckToBoard String
-    | LocalMove
+type Source
+    = FromBoard String
+    | FromDeck String
+
+
+type Destination
+    = ToBoard
+    | ToDeck
 
 
 init : Model
@@ -34,11 +39,24 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         ItemMsg msg ->
-            { model | items = Item.update msg model.items }
+            case toMove ToDeck model of
+                FromBoard _ ->
+                    case Item.recallItem msg model.items of
+                        Ok items ->
+                            { model
+                                | items = items
+                                , board = Board.hideMovedItem model.board
+                            }
+
+                        Err _ ->
+                            model
+
+                FromDeck _ ->
+                    { model | items = Item.update msg model.items }
 
         BoardMsg msg ->
-            case toMove model of
-                DeckToBoard item ->
+            case toMove ToBoard model of
+                FromDeck item ->
                     case Board.addItem msg item model.board of
                         Ok board ->
                             { model
@@ -50,7 +68,7 @@ update msg model =
                         Err _ ->
                             model
 
-                LocalMove ->
+                FromBoard _ ->
                     { model | board = Board.update msg model.board }
 
         Fetch (Ok gameData) ->
@@ -60,14 +78,24 @@ update msg model =
             Debug.log (toString error) model
 
 
-toMove : Model -> Move
-toMove { items } =
-    case List.filter .picked items.myItems of
-        [ pickedItem ] ->
-            DeckToBoard pickedItem.item
+toMove : Destination -> Model -> Source
+toMove move_ { items, board } =
+    case move_ of
+        ToBoard ->
+            case List.filter .picked items.myItems of
+                [ pickedItem ] ->
+                    FromDeck pickedItem.item
 
-        _ ->
-            LocalMove
+                _ ->
+                    FromBoard ""
+
+        ToDeck ->
+            case List.filter .picked board.stagingItems of
+                [ pickedItem ] ->
+                    FromBoard pickedItem.item
+
+                _ ->
+                    FromDeck ""
 
 
 view : Model -> Html Msg

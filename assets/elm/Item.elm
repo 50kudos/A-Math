@@ -1,4 +1,15 @@
-module Item exposing (Model, Msg, init, update, hideMovedItem, decoder, myItems, restItems)
+module Item
+    exposing
+        ( Model
+        , Msg
+        , init
+        , update
+        , recallItem
+        , hideMovedItem
+        , decoder
+        , myItems
+        , restItems
+        )
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -61,7 +72,7 @@ update msg model =
             { model | myItems = updateDeck int model }
 
         Put int ->
-            model
+            { model | myItems = updateDeck int model }
 
 
 updateDeck : Int -> Model -> List DeckItem
@@ -77,7 +88,7 @@ updateDeck target model =
                     { item | picked = not item.picked }
 
                 ( True, False ) ->
-                    { item | picked = True }
+                    { item | picked = not item.moved }
     in
         case List.Extra.findIndices .picked model.myItems of
             [] ->
@@ -105,6 +116,22 @@ hideMovedItem model =
                 item
     in
         { model | myItems = List.map hideItem model.myItems }
+
+
+recallItem : Msg -> Model -> Result Model Model
+recallItem msg model =
+    case msg of
+        Put int ->
+            Ok
+                { model
+                    | myItems =
+                        model.myItems
+                            |> List.Extra.updateAt int (\item -> { item | moved = False })
+                            |> Maybe.withDefault model.myItems
+                }
+
+        _ ->
+            Err model
 
 
 myItems : Model -> (Msg -> msg) -> Html msg

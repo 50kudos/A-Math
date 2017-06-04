@@ -1,4 +1,14 @@
-module Board exposing (Model, Msg, init, update, addItem, view, decoder)
+module Board
+    exposing
+        ( Model
+        , Msg
+        , init
+        , update
+        , addItem
+        , hideMovedItem
+        , view
+        , decoder
+        )
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -39,7 +49,7 @@ type Msg
 
 init : Model
 init =
-    Model [] [ { item = "1", i = 5, j = 0, picked = False } ]
+    Model [] []
 
 
 update : Msg -> Model -> Model
@@ -89,6 +99,11 @@ addItem msg item model =
 
         _ ->
             Err model
+
+
+hideMovedItem : Model -> Model
+hideMovedItem model =
+    { model | stagingItems = List.filter (not << .picked) model.stagingItems }
 
 
 otherBeingPicked : Model -> Int -> Int -> Bool
