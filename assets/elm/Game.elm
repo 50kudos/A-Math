@@ -21,8 +21,8 @@ type Msg
 
 
 type Source
-    = FromBoard String
-    | FromDeck String
+    = FromBoard ( String, Int )
+    | FromDeck ( String, Int )
 
 
 type Destination
@@ -40,8 +40,8 @@ update msg model =
     case msg of
         ItemMsg msg ->
             case toMove ToDeck model of
-                FromBoard _ ->
-                    case Item.recallItem msg model.items of
+                FromBoard item ->
+                    case Item.recallItem msg item model.items of
                         Ok items ->
                             { model
                                 | items = items
@@ -84,18 +84,18 @@ toMove move_ { items, board } =
         ToBoard ->
             case List.filter .picked items.myItems of
                 [ pickedItem ] ->
-                    FromDeck pickedItem.item
+                    FromDeck ( pickedItem.item, pickedItem.point )
 
                 _ ->
-                    FromBoard ""
+                    FromBoard ( "", 0 )
 
         ToDeck ->
             case List.filter .picked board.stagingItems of
                 [ pickedItem ] ->
-                    FromBoard pickedItem.item
+                    FromBoard ( pickedItem.item, pickedItem.point )
 
                 _ ->
-                    FromDeck ""
+                    FromDeck ( "", 0 )
 
 
 view : Model -> Html Msg
@@ -119,4 +119,4 @@ decoder =
 getItems : Cmd Msg
 getItems =
     Http.send Fetch <|
-        Http.get "http://localhost:4000/api/items/3" decoder
+        Http.get "http://localhost:4000/api/items/5" decoder

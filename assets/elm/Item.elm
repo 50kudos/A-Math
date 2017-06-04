@@ -111,22 +111,23 @@ hideMovedItem model =
         hideItem : DeckItem -> DeckItem
         hideItem item =
             if item.picked then
-                { item | moved = True, picked = False }
+                { item | item = "", moved = True, picked = False }
             else
                 item
     in
         { model | myItems = List.map hideItem model.myItems }
 
 
-recallItem : Msg -> Model -> Result Model Model
-recallItem msg model =
+recallItem : Msg -> ( String, Int ) -> Model -> Result Model Model
+recallItem msg ( itemId, point ) model =
     case msg of
         Put int ->
             Ok
                 { model
                     | myItems =
                         model.myItems
-                            |> List.Extra.updateAt int (\item -> { item | moved = False })
+                            |> List.Extra.updateAt int
+                                (\item -> { item | item = itemId, point = point, moved = False })
                             |> Maybe.withDefault model.myItems
                 }
 

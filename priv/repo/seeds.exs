@@ -14,11 +14,11 @@ example_data =
   %{
     items: %{
       boardItems: [
-        %{item: "1", i: 7, j: 4},
-        %{item: "+", i: 7, j: 5},
-        %{item: "1", i: 7, j: 6},
-        %{item: "=", i: 7, j: 7},
-        %{item: "2", i: 7, j: 8}
+        %{item: "1", i: 7, j: 4, point: 1},
+        %{item: "+", i: 7, j: 5, point: 2},
+        %{item: "1", i: 7, j: 6, point: 1},
+        %{item: "=", i: 7, j: 7, point: 1},
+        %{item: "2", i: 7, j: 8, point: 1}
       ],
       myItems: [
         %{item: "10", id: 1, point: 3},

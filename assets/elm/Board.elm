@@ -25,7 +25,7 @@ type alias Model =
 
 
 type alias CommittedItem =
-    { item : String, i : Int, j : Int }
+    { item : String, i : Int, j : Int, point : Int }
 
 
 type alias StagingItem a =
@@ -87,14 +87,14 @@ update msg model =
             model
 
 
-addItem : Msg -> String -> Model -> Result Model Model
-addItem msg item model =
+addItem : Msg -> ( String, Int ) -> Model -> Result Model Model
+addItem msg ( item, point ) model =
     case msg of
         Put i j ->
             Ok
                 { model
                     | stagingItems =
-                        { item = item, i = i, j = j, picked = False } :: model.stagingItems
+                        { item = item, i = i, j = j, picked = False, point = point } :: model.stagingItems
                 }
 
         _ ->
@@ -197,10 +197,11 @@ decoder =
     let
         committedItemsDecoder : JD.Decoder CommittedItem
         committedItemsDecoder =
-            JD.map3 CommittedItem
+            JD.map4 CommittedItem
                 (JD.field "item" JD.string)
                 (JD.field "i" JD.int)
                 (JD.field "j" JD.int)
+                (JD.field "point" JD.int)
     in
         JD.map2 Model
             (JD.at [ "boardItems" ] <| JD.list committedItemsDecoder)
