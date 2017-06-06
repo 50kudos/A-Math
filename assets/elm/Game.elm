@@ -137,7 +137,7 @@ decoder =
 getItems : Cmd Msg
 getItems =
     Http.send Fetch <|
-        Http.get "http://localhost:4000/api/items/9" decoder
+        Http.get "http://localhost:4000/api/items/10" decoder
 
 
 patchItems : Http.Body -> Cmd Msg
@@ -146,7 +146,7 @@ patchItems body =
         Http.request
             { method = "PATCH"
             , headers = []
-            , url = "http://localhost:4000/api/items/9"
+            , url = "http://localhost:4000/api/items/10"
             , body = body
             , expect = Http.expectJson decoder
             , timeout = Nothing

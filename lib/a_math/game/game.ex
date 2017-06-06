@@ -2,7 +2,6 @@ defmodule AMath.Game do
   @moduledoc """
   The boundary for the Game system.
   """
-  import IEx
   import Ecto.{Query, Changeset}, warn: false
   alias AMath.Repo
 
@@ -54,7 +53,7 @@ defmodule AMath.Game do
   """
   def create_item(attrs \\ %{}) do
     %Item{}
-    |> item_changeset(attrs)
+    |> Data.changeset(attrs)
     |> Repo.insert()
   end
 
