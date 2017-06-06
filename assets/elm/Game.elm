@@ -4,6 +4,7 @@ import Item
 import Board
 import Html exposing (Html, div, map, section, button, a, text)
 import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import Http
 import Json.Decode as JD
 
@@ -16,7 +17,7 @@ type alias Model =
 
 type Msg
     = Fetch (Result Http.Error Model)
-    | Submit (Result Http.Error Model)
+    | Push
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
 
@@ -36,7 +37,7 @@ init =
     Model Item.init Board.init
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ItemMsg msg ->
@@ -48,12 +49,13 @@ update msg model =
                                 | items = items
                                 , board = Board.hideMovedItem model.board
                             }
+                                ! [ Cmd.none ]
 
                         Err _ ->
-                            model
+                            model ! [ Cmd.none ]
 
                 FromDeck _ ->
-                    { model | items = Item.update msg model.items }
+                    { model | items = Item.update msg model.items } ! [ Cmd.none ]
 
         BoardMsg msg ->
             case toMove ToBoard model of
@@ -65,21 +67,26 @@ update msg model =
                                 , items =
                                     Item.hideMovedItem model.items
                             }
+                                ! [ Cmd.none ]
 
                         Err _ ->
-                            model
+                            model ! [ Cmd.none ]
 
                 FromBoard _ ->
-                    { model | board = Board.update msg model.board }
+                    { model | board = Board.update msg model.board } ! [ Cmd.none ]
 
         Fetch (Ok gameData) ->
-            { model | items = gameData.items, board = gameData.board }
+            { model | items = gameData.items, board = gameData.board } ! [ Cmd.none ]
 
         Fetch (Err error) ->
-            Debug.log (toString error) model
+            Debug.log (toString error) model ! [ Cmd.none ]
 
-        Submit _ ->
-            model
+        Push ->
+            let
+                jsonBody =
+                    Http.jsonBody (Board.encoder model.board)
+            in
+                ( model, patchItems jsonBody )
 
 
 toMove : Destination -> Model -> Source
@@ -111,7 +118,10 @@ view model =
             , Item.myItems model.items ItemMsg
             ]
         , section [ class "pl3" ]
-            [ a [ class "f6 link db br1 ba ph3 pv2 near-white pointer" ]
+            [ a
+                [ class "f6 link db br1 ba ph3 pv2 near-white pointer"
+                , onClick Push
+                ]
                 [ text "Submit" ]
             ]
         ]
@@ -130,7 +140,15 @@ getItems =
         Http.get "http://localhost:4000/api/items/9" decoder
 
 
-postItems : Cmd Msg
-postItems =
-    Http.send Submit <|
-        Http.post "http://localhost:4000/api/submit" Http.emptyBody decoder
+patchItems : Http.Body -> Cmd Msg
+patchItems body =
+    Http.send Fetch <|
+        Http.request
+            { method = "PATCH"
+            , headers = []
+            , url = "http://localhost:4000/api/items/9"
+            , body = body
+            , expect = Http.expectJson decoder
+            , timeout = Nothing
+            , withCredentials = False
+            }

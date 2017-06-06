@@ -8,12 +8,14 @@ module Board
         , hideMovedItem
         , view
         , decoder
+        , encoder
         )
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Decode as JD
+import Json.Encode as JE
 import List.Extra
 import Helper as H
 
@@ -206,3 +208,24 @@ decoder =
         JD.map2 Model
             (JD.at [ "boardItems" ] <| JD.list committedItemsDecoder)
             (JD.succeed init.stagingItems)
+
+
+encoder : Model -> JE.Value
+encoder { stagingItems } =
+    let
+        encodeItem : StagingItem CommittedItem -> JE.Value
+        encodeItem { item, i, j, point } =
+            JE.object
+                [ ( "item", JE.string item )
+                , ( "i", JE.int i )
+                , ( "j", JE.int j )
+                , ( "point", JE.int point )
+                ]
+    in
+        JE.object
+            [ ( "items"
+              , JE.object
+                    [ ( "boardItems", JE.list <| List.map encodeItem stagingItems )
+                    ]
+              )
+            ]

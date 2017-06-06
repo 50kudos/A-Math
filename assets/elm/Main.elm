@@ -33,7 +33,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GameMsg msg ->
-            { model | game = Game.update msg model.game } ! [ Cmd.none ]
+            let
+                ( game, gameCmd ) =
+                    Game.update msg model.game
+            in
+                { model | game = game } ! [ Cmd.map GameMsg gameCmd ]
 
 
 subscriptions : Model -> Sub Msg
