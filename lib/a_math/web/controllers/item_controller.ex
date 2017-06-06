@@ -25,11 +25,11 @@ defmodule AMath.Web.ItemController do
     render(conn, "show.json", state: state.items)
   end
 
-  def update(conn, %{"id" => id, "item" => item_params}) do
+  def update(conn, %{"id" => id, "items" => item_params}) do
     item = Game.get_item!(id)
 
-    with {:ok, %Item{} = item} <- Game.update_item(item, item_params) do
-      render(conn, "show.json", item: item)
+    with {:ok, %Item{} = state} <- Game.update_data(item, item_params) do
+      render(conn, "show.json", state: state.items)
     end
   end
 

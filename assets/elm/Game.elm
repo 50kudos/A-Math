@@ -2,7 +2,7 @@ module Game exposing (..)
 
 import Item
 import Board
-import Html exposing (Html, div, map, section)
+import Html exposing (Html, div, map, section, button, a, text)
 import Html.Attributes exposing (class)
 import Http
 import Json.Decode as JD
@@ -16,6 +16,7 @@ type alias Model =
 
 type Msg
     = Fetch (Result Http.Error Model)
+    | Submit (Result Http.Error Model)
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
 
@@ -77,6 +78,9 @@ update msg model =
         Fetch (Err error) ->
             Debug.log (toString error) model
 
+        Submit _ ->
+            model
+
 
 toMove : Destination -> Model -> Source
 toMove move_ { items, board } =
@@ -100,11 +104,15 @@ toMove move_ { items, board } =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex justify-center flex-wrap" ]
+    div [ class "flex justify-center flex-wrap pv4" ]
         [ Item.restItems model.items
         , section [ class "w-80-m w-40-l" ]
             [ Board.view model.board BoardMsg
             , Item.myItems model.items ItemMsg
+            ]
+        , section [ class "pl3" ]
+            [ a [ class "f6 link db br1 ba ph3 pv2 near-white pointer" ]
+                [ text "Submit" ]
             ]
         ]
 
@@ -119,4 +127,10 @@ decoder =
 getItems : Cmd Msg
 getItems =
     Http.send Fetch <|
-        Http.get "http://localhost:4000/api/items/5" decoder
+        Http.get "http://localhost:4000/api/items/9" decoder
+
+
+postItems : Cmd Msg
+postItems =
+    Http.send Submit <|
+        Http.post "http://localhost:4000/api/submit" Http.emptyBody decoder

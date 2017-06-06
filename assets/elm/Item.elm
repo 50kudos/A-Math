@@ -149,7 +149,7 @@ myItems { myItems } toMsg =
                             ++ H.colorByPick item
                     , onClick (Pick nth)
                     ]
-                    [ span [] [ text item.item ]
+                    [ span [] [ text (H.cast item.item) ]
                     , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]
                     ]
 
@@ -158,7 +158,7 @@ myItems { myItems } toMsg =
             div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
         List.indexedMap tile myItems
-            |> div [ class "flex justify-center items-center mv2 mv4-ns" ]
+            |> div [ class "flex justify-center items-center mt2 mt4-ns" ]
             |> map toMsg
 
 
@@ -169,7 +169,7 @@ restItems { restItems } =
         tile item =
             div [ class "mb1 flex justify-center items-center" ]
                 [ div [ class "bg-dark-blue light-gray w2 h2 flex justify-center items-center" ]
-                    [ text item.item ]
+                    [ text (H.cast item.item) ]
                 , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
                 ]
     in

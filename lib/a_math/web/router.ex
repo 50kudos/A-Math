@@ -23,6 +23,6 @@ defmodule AMath.Web.Router do
   scope "/api", AMath.Web do
     pipe_through :api
     
-    resources "/items", ItemController, only: [:show]
+    resources "/items", ItemController, only: [:show, :update]
   end
 end

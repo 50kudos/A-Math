@@ -12,3 +12,11 @@ colorByPick item =
 isAtIndex : Int -> Int -> { a | i : Int, j : Int } -> Bool
 isAtIndex i j aIndex =
     aIndex.i == i && aIndex.j == j
+
+
+cast : String -> String
+cast string =
+    if string == "blank" then
+        ""
+    else
+        string

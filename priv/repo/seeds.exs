@@ -59,7 +59,7 @@ example_data =
         %{item: "÷", ea: 4, point: 2},
         %{item: "x/÷", ea: 4, point: 1},
         %{item: "=", ea: 9, point: 1},
-        %{item: "", ea: 4, point: 0}
+        %{item: "blank", ea: 4, point: 0}
       ]
     }
   }

@@ -155,14 +155,14 @@ view model toMsg =
         viewSlot i j multiplier =
             case List.Extra.find (H.isAtIndex i j) model.committedItems of
                 Just item ->
-                    slot Nope "bg-dark-blue light-gray" [ desc "" item.item "" ]
+                    slot Nope "bg-dark-blue light-gray" [ desc "" (H.cast item.item) "" ]
 
                 Nothing ->
                     case List.Extra.find (H.isAtIndex i j) model.stagingItems of
                         Just item ->
                             slot (Pick item)
                                 ((H.colorByPick item) ++ "pointer b--dark-blue")
-                                [ desc "" item.item "" ]
+                                [ desc "" (H.cast item.item) "" ]
 
                         Nothing ->
                             case multiplier of
