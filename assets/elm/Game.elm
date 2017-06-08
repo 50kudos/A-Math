@@ -17,6 +17,7 @@ type alias Model =
 
 type Msg
     = Fetch (Result Http.Error Model)
+    | Patch (Result Http.Error Model)
     | Push
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
@@ -74,6 +75,15 @@ update msg model =
 
                 FromBoard _ ->
                     { model | board = Board.update msg model.board } ! [ Cmd.none ]
+
+        Patch (Ok gameData) ->
+            if Board.commitUnchanged model.board gameData.board then
+                model ! [ Cmd.none ]
+            else
+                { model | items = gameData.items, board = gameData.board } ! [ Cmd.none ]
+
+        Patch (Err error) ->
+            Debug.log (toString error) model ! [ Cmd.none ]
 
         Fetch (Ok gameData) ->
             { model | items = gameData.items, board = gameData.board } ! [ Cmd.none ]
@@ -142,7 +152,7 @@ getItems =
 
 patchItems : Http.Body -> Cmd Msg
 patchItems body =
-    Http.send Fetch <|
+    Http.send Patch <|
         Http.request
             { method = "PATCH"
             , headers = []

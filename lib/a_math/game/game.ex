@@ -7,6 +7,7 @@ defmodule AMath.Game do
 
   alias AMath.Game.Item
   alias AMath.Game.Data
+  alias AMath.Game.Rule
 
   @doc """
   Returns the list of items.
@@ -81,54 +82,6 @@ defmodule AMath.Game do
       |> Repo.update()
     end
   end
-  
-  def commit(board_items, staging_items) do
-    # Error if:
-    # Any of staging_items placed in i j poistion that already has an item
-    # All i position OR(||) all j position of staging_items have different number
-    #   i.e. unique all(i) = 1 OR unique all(j) = 1
-    # etc.
-    
-    board_items
-    # |> validate(staging_items)
-    |> Enum.concat(staging_items)
-  end
-  
-  # struct -> map -> {:ok, new_data, number_of_commiited_items}
-  def change_board(%{items: _} = game, %{"boardItems" => staging_items}) do
-    new_data =
-      game
-      |> update_in([:items, :boardItems], &commit(&1, staging_items))
-    
-    {:ok, new_data, Enum.count(staging_items)}
-  end
-
-  # struct -> int -> {:ok, new_data, random-items}
-  def change_rest(%{items: _} = game, _committed_count) do
-    # random extract item from restItems by committed_count
-    ramdom_items = []
-    {:ok, update_in(game, [:items, :restItems], &(&1)), ramdom_items}
-  end
-
-  # struct -> map -> list -> {:ok, new_data}
-  def change_mine(%{items: _} = game, %{"boardItems" => _staging_items}, ramdom_items) do
-    # myitems = myitems - stagingItems
-    # myitems = myitem + ramdom_items
-    {:ok, update_in(game, [:items, :myItems], &(&1)) }
-  end
-
-  
-  def find_and_update(list, item, value) do
-    update_value = fn item_ ->
-      if item_.item == item do
-        %{item_ | item: value}
-      else
-        item_
-      end
-    end
-
-    Enum.map(list, update_value)
-  end
 
   @doc """
   Deletes a Item.
@@ -146,22 +99,63 @@ defmodule AMath.Game do
     Repo.delete(item)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking item changes.
-
-  ## Examples
-
-      iex> change_item(item)
-      %Ecto.Changeset{source: %Item{}}
-
-  """
-  def change_item(%Item{} = item) do
-    item_changeset(item, %{})
+  # struct -> map -> {:ok, new_data, number_of_commiited_items}
+  defp change_board(%{items: _} = game, %{"boardItems" => staging_items}) do
+    new_data =
+      case staging_items do
+        [] ->
+          game
+        _ ->
+          game
+          |> update_in([:items, :boardItems], &commit(&1, staging_items))
+      end
+    
+    {:ok, new_data, Enum.count(staging_items)}
   end
 
-  defp item_changeset(%Item{} = item, attrs) do
-    item
-    |> cast(attrs, [:items])
-    |> validate_required([])
+  defp commit(board_items, staging_items) do
+    staging_items = Data.board_map(staging_items)
+    all_items = Enum.concat(board_items, staging_items)
+
+    case Rule.get_linear(staging_items) do
+      {:constant_x, x, _min_y, _max_y} ->
+        if Rule.is_connectable_x(all_items, staging_items, x) do
+          all_items
+        else
+          board_items
+        end
+      {:constant_y, y, _min_x, _max_x} ->
+        if Rule.is_connectable_y(all_items, staging_items, y) do
+          all_items
+        else
+          board_items
+        end
+      {:point, x, y} ->
+        x_ok = Rule.is_connectable_x(all_items, staging_items, x)
+        y_ok = Rule.is_connectable_y(all_items, staging_items, y)
+        
+        case {x_ok, y_ok} do
+          {true, _} -> all_items
+          {_, true} -> all_items
+          _ -> board_items
+        end
+      _ ->
+        :no_op
+    end
   end
+
+  # map -> int -> {:ok, new_data, random-items}
+  defp change_rest(%{items: _} = game, _committed_count) do
+    # random extract item from restItems by committed_count
+    ramdom_items = []
+    {:ok, update_in(game, [:items, :restItems], &(&1)), ramdom_items}
+  end
+
+  # map -> map -> list -> {:ok, new_data}
+  defp change_mine(%{items: _} = game, %{"boardItems" => _staging_items}, _random_items) do
+    # myitems = myitems - stagingItems
+    # myitems = myitem + ramdom_items
+    {:ok, update_in(game, [:items, :myItems], &(&1)) }
+  end
+
 end

@@ -7,18 +7,18 @@ defmodule AMath.Game.Data do
   @primary_key {:id, :binary_id, autogenerate: true}
   
   embedded_schema do
-    embeds_many :myItems, DeckItem, primary_key: @primary_key do
+    embeds_many :myItems, DeckItem, primary_key: @primary_key, on_replace: :delete do
       field :item, :string
       field :point, :integer
     end
     
-    embeds_many :restItems, RestItem, primary_key: @primary_key do
+    embeds_many :restItems, RestItem, primary_key: @primary_key, on_replace: :delete do
       field :item, :string
       field :ea, :integer
       field :point, :integer
     end
-    
-    embeds_many :boardItems, BoardItem, primary_key: @primary_key do
+
+    embeds_many :boardItems, BoardItem, primary_key: @primary_key, on_replace: :delete do
       field :item, :string
       field :i, :integer
       field :j, :integer
@@ -62,5 +62,18 @@ defmodule AMath.Game.Data do
       |> Map.new(fn {k,list} -> {k, Enum.map(list, &Map.from_struct/1)} end)
       |> Map.put(:id, struct.id)
     }
+  end
+  
+  def board_map(board_items) do
+    map_fn = fn board_item ->
+      %{
+        i: (board_item["i"] || board_item.i),
+        j: (board_item["j"] || board_item.j),
+        item: (board_item["item"] || board_item.item),
+        point: (board_item["point"] || board_item.point)
+      }
+    end
+    
+    Enum.map(board_items, map_fn)
   end
 end

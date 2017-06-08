@@ -6,6 +6,7 @@ module Board
         , update
         , addItem
         , hideMovedItem
+        , commitUnchanged
         , view
         , decoder
         , encoder
@@ -112,6 +113,11 @@ otherBeingPicked : Model -> Int -> Int -> Bool
 otherBeingPicked { stagingItems } i j =
     stagingItems
         |> List.any (\item -> not (H.isAtIndex i j item) && item.picked)
+
+
+commitUnchanged : Model -> Model -> Bool
+commitUnchanged existing new =
+    existing.committedItems == new.committedItems
 
 
 board : List (List Multiplier)
