@@ -119,4 +119,14 @@ defmodule AMath.Game.Rule do
     |> Enum.shuffle()
     |> Enum.take_random(n)
   end
+  
+  def is_equation_correct(items, :constant_x) do
+    items
+  end
+  
+  def is_equation_correct(items, :constant_y) do
+    items
+  end
+  
+  
 end

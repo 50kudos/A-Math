@@ -19,7 +19,7 @@ defmodule AMath.Web.ItemView do
   end
   
   def render("my_item.json", %{item: item}) do
-    %{item: item.item, id: item.id, point: item.point}
+    %{item: item.item, point: item.point}
   end
   
   def render("board_item.json", %{item: item}) do

@@ -78,6 +78,7 @@ defmodule AMath.Game do
       {:ok, new_data, ramdom_items} <- change_rest(new_data, committed_count),
       {:ok, new_data} <- change_mine(new_data, attrs, ramdom_items) do
       
+      # IEx.pry
       prev_data
       |> Data.changeset(new_data)
       |> Repo.update()
@@ -127,18 +128,18 @@ defmodule AMath.Game do
       {:constant_x, x, _min_y, _max_y} ->
         cond do
           board_items == [] && Rule.is_continuous(staging_items, constant_x: x) ->
-            all_items
+            Rule.is_equation_correct(all_items, :constant_x)
           Rule.is_connectable_x(all_items, staging_items, x) ->
-            all_items
+            Rule.is_equation_correct(all_items, :constant_x)
           true ->
             board_items
         end
       {:constant_y, y, _min_x, _max_x} ->
         cond do
           board_items == [] && Rule.is_continuous(staging_items, constant_y: y) ->
-            all_items
+            Rule.is_equation_correct(all_items, :constant_y)
           Rule.is_connectable_y(all_items, staging_items, y) ->
-            all_items
+            Rule.is_equation_correct(all_items, :constant_y)
           true ->
             board_items
         end
@@ -175,7 +176,7 @@ defmodule AMath.Game do
         end
       end)
     end
-    # IEx.pry
+
     {
       :ok,
       update_in(game, [:items, :restItems], &update_rest.(&1, random_items)),
@@ -198,6 +199,7 @@ defmodule AMath.Game do
       |> Enum.concat(Enum.map(random_items, &(%{item: &1.item, point: &1.point})))
     end
 
+    # IEx.pry
     {:ok, update_in(game, [:items, :myItems], update_mine) }
   end
 

@@ -4,14 +4,14 @@ defmodule AMath.Game.Intializer do
       items: %{
         boardItems: [],
         myItems: [
-          %{item: "10", id: 1, point: 3},
-          %{item: "-", id: 2, point: 2},
-          %{item: "=", id: 3, point: 1},
-          %{item: "=", id: 4, point: 1},
-          %{item: "1", id: 5, point: 1},
-          %{item: "2", id: 6, point: 1},
-          %{item: "0", id: 7, point: 1},
-          %{item: "9", id: 8, point: 2}
+          %{item: "10", point: 3},
+          %{item: "-", point: 2},
+          %{item: "=", point: 1},
+          %{item: "=", point: 1},
+          %{item: "1", point: 1},
+          %{item: "2", point: 1},
+          %{item: "0", point: 1},
+          %{item: "9", point: 2}
         ],
         restItems: [
           %{item: "0", ea: 4, point: 1},

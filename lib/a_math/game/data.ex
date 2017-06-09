@@ -4,21 +4,21 @@ defmodule AMath.Game.Data do
   import Ecto.Changeset, warn: false
   alias AMath.Game.Item
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  
+  @primary_key false
+
   embedded_schema do
-    embeds_many :myItems, DeckItem, primary_key: @primary_key, on_replace: :delete do
+    embeds_many :myItems, DeckItem, primary_key: false, on_replace: :delete do
       field :item, :string
       field :point, :integer
     end
     
-    embeds_many :restItems, RestItem, primary_key: @primary_key, on_replace: :delete do
+    embeds_many :restItems, RestItem, primary_key: false, on_replace: :delete do
       field :item, :string
       field :ea, :integer
       field :point, :integer
     end
 
-    embeds_many :boardItems, BoardItem, primary_key: @primary_key, on_replace: :delete do
+    embeds_many :boardItems, BoardItem, primary_key: false, on_replace: :delete do
       field :item, :string
       field :i, :integer
       field :j, :integer
@@ -60,7 +60,6 @@ defmodule AMath.Game.Data do
       |> Map.from_struct()
       |> Map.take([:boardItems, :myItems, :restItems])
       |> Map.new(fn {k,list} -> {k, Enum.map(list, &Map.from_struct/1)} end)
-      |> Map.put(:id, struct.id)
     }
   end
   
