@@ -126,26 +126,37 @@ defmodule AMath.Game do
 
     case Rule.get_linear(staging_items) do
       {:constant_x, x, _min_y, _max_y} ->
+        all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
+        
         cond do
-          board_items == [] && Rule.is_continuous(staging_items, constant_x: x) ->
+          board_items == [] && Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) ->
             Rule.is_equation_correct(all_items, :constant_x)
-          Rule.is_connectable_x(all_items, staging_items, x) ->
+
+          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
             Rule.is_equation_correct(all_items, :constant_x)
+
           true ->
             board_items
         end
       {:constant_y, y, _min_x, _max_x} ->
+        all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
+        
         cond do
-          board_items == [] && Rule.is_continuous(staging_items, constant_y: y) ->
+          board_items == [] && Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) ->
             Rule.is_equation_correct(all_items, :constant_y)
-          Rule.is_connectable_y(all_items, staging_items, y) ->
+
+          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
             Rule.is_equation_correct(all_items, :constant_y)
+
           true ->
             board_items
         end
       {:point, x, y} ->
-        x_ok = Rule.is_connectable_x(all_items, staging_items, x)
-        y_ok = Rule.is_connectable_y(all_items, staging_items, y)
+        all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
+        x_ok = Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1)
+        
+        all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
+        y_ok = Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1)
         
         case {x_ok, y_ok} do
           {true, _} -> all_items

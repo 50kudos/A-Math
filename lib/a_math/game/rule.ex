@@ -45,10 +45,7 @@ defmodule AMath.Game.Rule do
     end
   end
 
-  # Sn = n(2a+(n-1)d)/2 where d = 1
-  # Sn = n(2a+(n-1))/2
-  def is_continuous(items, constant) when is_list(items) do
-    {const_fn, every_fn} = linear_funtions(constant)
+  def is_continuous(items, const_fn, every_fn) when is_list(items) do
     items = Enum.filter(items, const_fn)
 
      case Enum.count(items) do
@@ -58,23 +55,28 @@ defmodule AMath.Game.Rule do
          [first|rest] = items
            |> Enum.map(every_fn)
            |> Enum.sort()
-
+   
+         # Sn = n(2a+(n-1)d)/2 where d = 1
          Enum.sum([first|rest]) == (count * (2 * first + count - 1) / 2)
      end
   end
   
-  defp linear_funtions(constant_x: x), do: {&(&1.i == x), &(&1.j)}
-  defp linear_funtions(constant_y: y), do: {&(&1.j == y), &(&1.i)}
+  def at_x(x), do: fn(a) -> a.i == x end
+  def at_y(y), do: fn(a) -> a.j == y end
   
-  def is_connectable_x(all_items, staging_items, x) do
-    x_items =
-      all_items
-      |> Enum.filter(&(&1.i == x))
-      |> Enum.sort_by(&(&1.j))
-            
-    staging_index = Enum.map(staging_items, &(&1.j))
-    index_chunks = Enum.chunk_by(0..board_size(), fn j ->
-      Enum.any?(x_items, &(&1.j == j))
+  def by_x, do: fn(a) -> a.i end
+  def by_y, do: fn(a) -> a.j end
+  
+  def filter_sort(items, f_axis, f_by) do
+    items
+    |> Enum.filter(f_axis)
+    |> Enum.sort_by(f_by)
+  end
+  
+  def is_connected(items, staging_items, f_by, f_at) do
+    staging_index = Enum.map(staging_items, f_by)
+    index_chunks = Enum.chunk_by(0..board_size(), fn axis ->
+      Enum.any?(items, f_at.(axis)) # magic!
     end)
       
     # IEx.pry
@@ -82,35 +84,6 @@ defmodule AMath.Game.Rule do
       staging_index -- index_chunk == [] &&
       Enum.count(index_chunk) > Enum.count(staging_items)
     end)
-  end
-  
-  def is_connectable_y(all_items, staging_items, y) do
-    y_items =
-      all_items
-      |> Enum.filter(&(&1.j == y))
-      |> Enum.sort_by(&(&1.i))
-            
-    staging_index = Enum.map(staging_items, &(&1.i))
-    index_chunks = Enum.chunk_by(0..board_size(), fn i ->
-      Enum.any?(y_items, &(&1.i == i))
-    end)
-    
-    Enum.any?(index_chunks, fn index_chunk ->
-      staging_index -- index_chunk == [] &&
-      Enum.count(index_chunk) > Enum.count(staging_items)
-    end)
-  end
-
-  def get_axis_items(items, x: x) do
-    items
-    |> Enum.filter(&(&1.i == x))
-    |> Enum.sort_by(&(&1.j))
-  end
-  
-  def get_axis_items(items, y: y) do
-    items
-    |> Enum.filter(&(&1.j == y))
-    |> Enum.sort_by(&(&1.i))
   end
   
   def take_random_rest(items, n) when is_integer(n) do
