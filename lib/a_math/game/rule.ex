@@ -1,5 +1,6 @@
 defmodule AMath.Game.Rule do
   import IEx
+  alias AMath.Game.Data
 
   def board_size() do
     15 - 1 # For zero based index
@@ -94,7 +95,6 @@ defmodule AMath.Game.Rule do
       Enum.any?(y_items, &(&1.i == i))
     end)
     
-    # IEx.pry
     Enum.any?(index_chunks, fn index_chunk ->
       staging_index -- index_chunk == [] &&
       Enum.count(index_chunk) > Enum.count(staging_items)
@@ -111,5 +111,12 @@ defmodule AMath.Game.Rule do
     items
     |> Enum.filter(&(&1.j == y))
     |> Enum.sort_by(&(&1.i))
+  end
+  
+  def take_random_rest(items, n) when is_integer(n) do
+    items
+    |> Data.expand_items()
+    |> Enum.shuffle()
+    |> Enum.take_random(n)
   end
 end

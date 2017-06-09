@@ -76,4 +76,10 @@ defmodule AMath.Game.Data do
     
     Enum.map(board_items, map_fn)
   end
+  
+  def expand_items(rest_items) do
+    rest_items
+    |> Enum.map(&List.duplicate(&1, &1.ea))
+    |> List.flatten()
+  end
 end
