@@ -1,25 +1,46 @@
 defmodule AMath.Game.Rule do
-  import IEx
   alias AMath.Game.Data
 
-  def board_size() do
+  defp board_size() do
     15 - 1 # For zero based index
   end
 
-  def is_digit(a) when is_binary(a)  do
+  defp is_digit(a) when is_binary(a)  do
     0..9
     |> Enum.map(&to_string/1)
     |> Enum.member?(a)
   end
   
-  def is_tens(a) when is_binary(a) do
+  defp is_tens(a) when is_binary(a) do
     10..20
     |> Enum.map(&to_string/1)
     |> Enum.member?(a)
   end
   
-  def is_operator(a) when is_binary(a) do
-    Enum.member? ~w(+ - x ÷ +/- x/÷), a
+  defp is_operator(a) when is_binary(a) do
+    Enum.member? ~w(+ - x ÷ +/- x/÷ =), a
+  end
+  
+  defp to_operator(a) when is_binary(a) do
+    case a do
+      "+" ->
+        a
+      "-" ->
+        a
+      "x" ->
+        "*"
+      "÷" ->
+        "/"
+      "+/-" ->
+        "+"
+      "x/÷" ->
+        "*"
+      "=" ->
+        "=="
+      _ ->
+        ArgumentError
+        |> raise(message: "Only + - x ÷ +/- x/÷ operators are supported.")
+    end
   end
   
   def is_blank(a) when is_binary(a) do
@@ -79,7 +100,6 @@ defmodule AMath.Game.Rule do
       Enum.any?(items, f_at.(axis)) # magic!
     end)
       
-    # IEx.pry
     Enum.any?(index_chunks, fn index_chunk ->
       staging_index -- index_chunk == [] &&
       Enum.count(index_chunk) > Enum.count(staging_items)
@@ -93,13 +113,59 @@ defmodule AMath.Game.Rule do
     |> Enum.take_random(n)
   end
   
-  def is_equation_correct(items, :constant_x) do
-    items
+  def is_equation_correct(items) do
+    items = Enum.map(items, &(&1.item))
+    
+    with {:ok, equations} <- IO.inspect(calculable_map(items)),
+      {:ok, ast} <- IO.inspect(validate_syntax(equations)),
+      {:ok, _} <- IO.inspect(validate_expr(items)),
+      {equality, _} <- IO.inspect(Code.eval_quoted(ast)) do
+      
+      equality
+    else
+      _ ->
+        false
+    end
   end
   
-  def is_equation_correct(items, :constant_y) do
-    items
+  def validate_syntax(equations) when is_list(equations) do
+    Enum.join(equations) |> Code.string_to_quoted()
   end
   
+  def validate_expr(expressions) do
+    validate = fn expr ->
+      case expr do
+        [_] ->
+          true
+        [a,b] ->
+          is_digit(a) && is_digit(b)
+        [a,b,c] ->
+          is_digit(a) && is_digit(b) && is_digit(c)
+        _ ->
+          false
+      end
+    end
+
+    expressions
+    |> Enum.chunk_by(&is_operator/1)
+    |> Enum.all?(validate)
+    |> if(do: {:ok, expressions}, else: {:error, expressions})
+  end
   
+  def calculable_map(items) do
+    items =
+      Enum.map(items, fn item ->
+        cond do
+          is_digit(item) -> String.to_integer(item)
+          is_tens(item) -> String.to_integer(item)
+          is_operator(item) -> to_operator(item)
+          is_blank(item) -> 1
+          true ->
+            ArgumentError
+            |> raise(message: "Only 0-20 and + - x ÷ +/- x/÷ are supported.")
+        end
+      end)
+    
+    {:ok, items}
+  end
 end

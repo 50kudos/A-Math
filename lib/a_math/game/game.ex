@@ -5,7 +5,6 @@ defmodule AMath.Game do
   import Ecto.{Query, Changeset}, warn: false
   alias AMath.Repo
 
-  import IEx
   alias AMath.Game.Item
   alias AMath.Game.Data
   alias AMath.Game.Rule
@@ -129,11 +128,14 @@ defmodule AMath.Game do
         all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
         
         cond do
-          board_items == [] && Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) ->
-            Rule.is_equation_correct(all_items, :constant_x)
+          board_items == [] &&
+          Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) &&
+          Rule.is_equation_correct(all_xitems) ->
+            all_items
 
-          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
-            Rule.is_equation_correct(all_items, :constant_x)
+          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) &&
+          Rule.is_equation_correct(all_xitems) ->
+            all_items
 
           true ->
             board_items
@@ -142,21 +144,28 @@ defmodule AMath.Game do
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
         
         cond do
-          board_items == [] && Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) ->
-            Rule.is_equation_correct(all_items, :constant_y)
+          board_items == [] &&
+          Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) &&
+          Rule.is_equation_correct(all_yitems) ->
+            all_items
 
-          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
-            Rule.is_equation_correct(all_items, :constant_y)
+          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) &&
+          Rule.is_equation_correct(all_yitems) ->
+            all_items
 
           true ->
             board_items
         end
       {:point, x, y} ->
         all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
-        x_ok = Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1)
+        x_ok =
+          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) &&
+          Rule.is_equation_correct(all_xitems)
         
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
-        y_ok = Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1)
+        y_ok =
+          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) &&
+          Rule.is_equation_correct(all_yitems)
         
         case {x_ok, y_ok} do
           {true, _} -> all_items
