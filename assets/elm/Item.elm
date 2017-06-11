@@ -5,6 +5,7 @@ module Item
         , init
         , update
         , recallItem
+        , batchRecall
         , hideMovedItem
         , decoder
         , myItems
@@ -111,7 +112,7 @@ hideMovedItem model =
         hideItem : DeckItem -> DeckItem
         hideItem item =
             if item.picked then
-                { item | item = "", moved = True, picked = False }
+                { item | moved = True, picked = False }
             else
                 item
     in
@@ -133,6 +134,11 @@ recallItem msg ( itemId, point ) model =
 
         _ ->
             Err model
+
+
+batchRecall : Model -> Model
+batchRecall model =
+    { model | myItems = List.map (\item -> { item | moved = False }) model.myItems }
 
 
 myItems : Model -> (Msg -> msg) -> Html msg
@@ -158,7 +164,7 @@ myItems { myItems } toMsg =
             div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
         List.indexedMap tile myItems
-            |> div [ class "flex justify-center items-center mt2 mt4-ns" ]
+            |> div [ class "flex justify-center items-center flex-auto" ]
             |> map toMsg
 
 

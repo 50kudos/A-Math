@@ -22,6 +22,7 @@ type Msg
     | Push
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
+    | BatchRecall
 
 
 type Source
@@ -109,6 +110,13 @@ update msg model =
             in
                 ( model, patchItems jsonBody )
 
+        BatchRecall ->
+            { model
+                | items = Item.batchRecall model.items
+                , board = Board.clearStaging model.board
+            }
+                ! [ Cmd.none ]
+
 
 toMove : Destination -> Model -> Source
 toMove move_ { items, board } =
@@ -136,7 +144,14 @@ view model =
         [ Item.restItems model.items
         , section [ class "w-80-m w-40-l" ]
             [ Board.view model.board BoardMsg
-            , Item.myItems model.items ItemMsg
+            , div [ class "flex justify-center  mt2 mt4-ns" ]
+                [ Item.myItems model.items ItemMsg
+                , a
+                    [ class "f6 link br1 ba ph3 pv2 near-white pointer tc"
+                    , onClick BatchRecall
+                    ]
+                    [ text "recall" ]
+                ]
             ]
         , section [ class "pl3" ]
             [ a

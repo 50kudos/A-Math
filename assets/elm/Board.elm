@@ -6,6 +6,7 @@ module Board
         , update
         , addItem
         , hideMovedItem
+        , clearStaging
         , commitUnchanged
         , exchanged
         , view
@@ -108,6 +109,11 @@ addItem msg ( item, point ) model =
 hideMovedItem : Model -> Model
 hideMovedItem model =
     { model | stagingItems = List.filter (not << .picked) model.stagingItems }
+
+
+clearStaging : Model -> Model
+clearStaging model =
+    { model | stagingItems = [] }
 
 
 otherBeingPicked : Model -> Int -> Int -> Bool
