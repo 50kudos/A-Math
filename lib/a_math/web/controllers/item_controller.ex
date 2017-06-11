@@ -25,10 +25,10 @@ defmodule AMath.Web.ItemController do
     render(conn, "show.json", state: state.items)
   end
 
-  def update(conn, %{"id" => id, "items" => item_params}) do
+  def update(conn, %{"id" => id, "items" => item_params, "patchType" => type}) do
     item = Game.get_item!(id)
 
-    with {:ok, %Item{} = state} <- Game.update_data(item, item_params) do
+    with {:ok, %Item{} = state} <- update_data(type, item, item_params) do
       render(conn, "show.json", state: state.items)
     end
   end
@@ -38,5 +38,12 @@ defmodule AMath.Web.ItemController do
     with {:ok, %Item{}} <- Game.delete_item(item) do
       send_resp(conn, :no_content, "")
     end
+  end
+  
+  defp update_data("commit", item, item_params) do
+    Game.update_commit(item, item_params)
+  end
+  defp update_data("exchange", item, item_params) do
+    Game.update_exchange(item, item_params)
   end
 end

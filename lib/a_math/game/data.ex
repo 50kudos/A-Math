@@ -81,4 +81,10 @@ defmodule AMath.Game.Data do
     |> Enum.map(&List.duplicate(&1, &1.ea))
     |> List.flatten()
   end
+
+  def compact_items(rand_items) do
+    rand_items
+    |> Enum.group_by(&(&1.item))
+    |> Enum.map(fn {k,v} -> {k,Enum.count(v)} end)
+  end
 end

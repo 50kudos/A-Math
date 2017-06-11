@@ -18,6 +18,7 @@ type alias Model =
 type Msg
     = Fetch (Result Http.Error Model)
     | Patch (Result Http.Error Model)
+    | Exchange
     | Push
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
@@ -77,7 +78,10 @@ update msg model =
                     { model | board = Board.update msg model.board } ! [ Cmd.none ]
 
         Patch (Ok gameData) ->
-            if Board.commitUnchanged model.board gameData.board then
+            if
+                Board.commitUnchanged model.board gameData.board
+                    && not (Board.exchanged model.board gameData.board)
+            then
                 model ! [ Cmd.none ]
             else
                 { model | items = gameData.items, board = gameData.board } ! [ Cmd.none ]
@@ -94,7 +98,14 @@ update msg model =
         Push ->
             let
                 jsonBody =
-                    Http.jsonBody (Board.encoder model.board)
+                    Http.jsonBody (Board.encoder "commit" model.board)
+            in
+                ( model, patchItems jsonBody )
+
+        Exchange ->
+            let
+                jsonBody =
+                    Http.jsonBody (Board.encoder "exchange" model.board)
             in
                 ( model, patchItems jsonBody )
 
@@ -133,6 +144,11 @@ view model =
                 , onClick Push
                 ]
                 [ text "Submit" ]
+            , a
+                [ class "mt2 f6 link db br1 ba ph3 pv2 near-white pointer"
+                , onClick Exchange
+                ]
+                [ text "Exchange" ]
             ]
         ]
 

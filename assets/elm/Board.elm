@@ -7,6 +7,7 @@ module Board
         , addItem
         , hideMovedItem
         , commitUnchanged
+        , exchanged
         , view
         , decoder
         , encoder
@@ -120,6 +121,11 @@ commitUnchanged existing new =
     existing.committedItems == new.committedItems
 
 
+exchanged : Model -> Model -> Bool
+exchanged existing new =
+    existing.committedItems == new.committedItems
+
+
 board : List (List Multiplier)
 board =
     [ [ E3, X1, X1, P2, X1, X1, X1, E3, X1, X1, X1, P2, X1, X1, E3 ]
@@ -216,8 +222,8 @@ decoder =
             (JD.succeed init.stagingItems)
 
 
-encoder : Model -> JE.Value
-encoder { stagingItems } =
+encoder : String -> Model -> JE.Value
+encoder patchType { stagingItems } =
     let
         encodeItem : StagingItem CommittedItem -> JE.Value
         encodeItem { item, i, j, point } =
@@ -234,4 +240,5 @@ encoder { stagingItems } =
                     [ ( "boardItems", JE.list <| List.map encodeItem stagingItems )
                     ]
               )
+            , ( "patchType", JE.string patchType )
             ]

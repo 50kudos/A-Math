@@ -20,13 +20,29 @@ defmodule AMath.Game do
     |> Repo.insert()
   end
 
-  def update_data(%Item{} = prev_data, attrs) do
+  def update_commit(%Item{} = prev_data, attrs) do
     game = Data.to_map(prev_data)
 
-    with {:ok, new_data, committed_count} <- change_board(game, attrs),
-      {:ok, new_data, ramdom_items} <- change_rest(new_data, committed_count),
-      {:ok, new_data} <- change_mine(new_data, attrs, ramdom_items) do
+    with {:ok, attrs} <- is_any_item(attrs),
+      {:ok, new_data, committed_count} <- commit_board(game, attrs),
+      {:ok, new_data, ramdom_items} <- take_rest(new_data, committed_count),
+      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items) do
       
+      prev_data
+      |> Data.changeset(new_data)
+      |> Repo.update()
+    end
+  end
+  
+  def update_exchange(%Item{} = prev_data, attrs) do
+    game = Data.to_map(prev_data)
+    exchanged_count = Enum.count(attrs["boardItems"])
+    
+    with {:ok, attrs} <- is_any_item(attrs),
+      {:ok, new_data, ramdom_items} <- take_rest(game, exchanged_count),
+      {:ok, new_data} <- add_rest(new_data, attrs),
+      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items) do
+    
       prev_data
       |> Data.changeset(new_data)
       |> Repo.update()
@@ -36,24 +52,25 @@ defmodule AMath.Game do
   def delete_item(%Item{} = item) do
     Repo.delete(item)
   end
+  
+  defp is_any_item(%{"boardItems" => staging_items} = attrs) do
+    case staging_items  do
+      [] ->
+        {:error, :not_found}
+      _ ->
+        {:ok, attrs}
+    end
+  end
 
-  defp change_board(%{items: items} = game, %{"boardItems" => staging_items}) do
-      case staging_items do
-        [] ->
-          {:error, :not_found}
-        _ ->
-          new_board = commit(items.boardItems, staging_items)
+  defp commit_board(%{items: items} = game, %{"boardItems" => staging_items}) do
+    new_board = commit(items.boardItems, staging_items)
 
-          if new_board == items.boardItems do
-            {:error, :not_found}
-          else
-            new_data =
-              game
-              |> update_in([:items, :boardItems], fn _ -> new_board end)
-
-            {:ok, new_data, Enum.count(staging_items)}
-          end
-      end
+    if new_board == items.boardItems do
+      {:error, :not_found}
+    else
+      new_data = update_in(game, [:items, :boardItems], fn _ -> new_board end)
+      {:ok, new_data, Enum.count(staging_items)}
+    end
   end
 
   defp commit(board_items, staging_items) do
@@ -114,19 +131,15 @@ defmodule AMath.Game do
     end
   end
 
-  defp change_rest(%{items: _} = game, committed_count) do
-    random_items =
-      game.items.restItems
-      |> Rule.take_random_rest(committed_count)
-      
-    update_rest = fn (restItems, rand_items) ->
-      items_tuple =
-        rand_items
-        |> Enum.group_by(&(&1.item)) |> Enum.map(fn {k,v} -> {k,Enum.count(v)} end)
-      
+  defp take_rest(%{items: _} = game, committed_count) do
+    random_items = Rule.take_random_rest(game.items.restItems, committed_count)
+  
+    update_rest = fn (restItems, taking_items) ->
+      taking_items = Data.compact_items(taking_items)
+
       restItems
       |> Enum.map(fn rest ->
-        with {_item,ea} <- Enum.find(items_tuple, &(elem(&1,0) == rest.item)) do
+        with {_item,ea} <- Enum.find(taking_items, &(elem(&1,0) == rest.item)) do
           %{rest | ea: rest.ea - ea}
         else
           nil -> rest
@@ -140,8 +153,30 @@ defmodule AMath.Game do
       random_items
     }
   end
+  
+  defp add_rest(%{items: _} = game, %{"boardItems" => staging_items}) do
+    exchanged_items = Data.board_map(staging_items)
+    
+    update_rest = fn (restItems, adding_items) ->
+      adding_items = Data.compact_items(adding_items)
 
-  defp change_mine(%{items: _} = game, %{"boardItems" => staging_items}, random_items) do
+      restItems
+      |> Enum.map(fn rest ->
+        with {_item,ea} <- Enum.find(adding_items, &(elem(&1,0) == rest.item)) do
+          %{rest | ea: rest.ea + ea}
+        else
+          nil -> rest
+        end
+      end)
+    end
+
+    {
+      :ok,
+      update_in(game, [:items, :restItems], &update_rest.(&1, exchanged_items))
+    }
+  end
+
+  defp update_mine(%{items: _} = game, %{"boardItems" => staging_items}, random_items) do
     staging_items = Data.board_map(staging_items)
 
     update_mine = fn myItems ->
