@@ -82,7 +82,7 @@ defmodule AMath.Game do
         
         cond do
           board_items == [] &&
-          # Rule.has_center_item(staging_items) &&
+          Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) &&
           Rule.is_equation_correct(all_xitems) ->
             {:ok, all_items}
@@ -102,7 +102,7 @@ defmodule AMath.Game do
         
         cond do
           board_items == [] &&
-          # Rule.has_center_item(staging_items) &&
+          Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) &&
           Rule.is_equation_correct(all_yitems) ->
             {:ok, all_items}

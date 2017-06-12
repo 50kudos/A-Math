@@ -99,6 +99,10 @@ defmodule AMath.Game.Rule do
     end)
   end
   
+  def has_center_item(items) do
+    Enum.any?(items, &(&1.i == board_size()/2 && &1.j == board_size()/2))
+  end
+  
   def at_x(x), do: fn(a) -> a.i == x end
   def at_y(y), do: fn(a) -> a.j == y end
   
