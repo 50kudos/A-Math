@@ -138,7 +138,7 @@ defmodule AMath.Game.Rule do
     with {:ok, equations} <- IO.inspect(calculable_map(items)),
       {:ok, ast} <- IO.inspect(validate_syntax(equations)),
       {:ok, _} <- IO.inspect(validate_expr(equations)),
-      :ok <- Macro.validate(validate_ast(ast))
+      :ok <- Macro.validate(ast)
     do
       all_expressions_matched?(ast)
     else
@@ -158,7 +158,9 @@ defmodule AMath.Game.Rule do
   end
   
   def validate_syntax(equations) when is_list(equations) do
-    Code.string_to_quoted(Enum.join(equations))
+    with {:ok, ast} <- Code.string_to_quoted(Enum.join(equations)) do
+      {:ok, validate_ast(ast)}
+    end
   end
   
   def validate_ast({operator, line, [number]}) do

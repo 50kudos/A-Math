@@ -87,14 +87,15 @@ defmodule AMath.Game do
           Rule.is_equation_correct(all_xitems) ->
             {:ok, all_items}
 
-          {:ok, equations} =
-            Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
-              Rule.has_xslot_gap(all_items, staging_items) &&
-              Rule.is_equation_correct(equations) &&
-              {:ok, all_items}
-
           true ->
-            :no_op
+            with {:ok, equations} <- Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1),
+              true <- Rule.has_xslot_gap(all_items, staging_items),
+              true <- Rule.is_equation_correct(equations) do
+              
+              {:ok, all_items}
+            else
+              _ -> :no_op
+            end
         end
       {:constant_y, y, _min_x, _max_x} ->
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
@@ -106,34 +107,35 @@ defmodule AMath.Game do
           Rule.is_equation_correct(all_yitems) ->
             {:ok, all_items}
 
-          {:ok, equations} =
-            Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
-              Rule.has_yslot_gap(all_items, staging_items) &&
-              Rule.is_equation_correct(equations) &&
-              {:ok, all_items}
-
           true ->
-            :no_op
+            with {:ok, equations} <- Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1),
+              true <- Rule.has_yslot_gap(all_items, staging_items),
+              true <- Rule.is_equation_correct(equations) do
+              
+              {:ok, all_items}
+            else
+              _ -> :no_op
+            end
         end
       {:point, x, y} ->
         all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
 
-        cond do
-          {:ok, x_equations} =
-            Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
-              Rule.has_xslot_gap(all_items, staging_items) &&
-              Rule.is_equation_correct(x_equations) &&
-              {:ok, all_items}
-              
-          {:ok, y_equations} =
-            Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
-              Rule.has_yslot_gap(all_items, staging_items) &&
-              Rule.is_equation_correct(y_equations) &&
-              {:ok, all_items}
+        with {:ok, x_equations} <- Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1),
+          true <- Rule.has_xslot_gap(all_items, staging_items),
+          true <- Rule.is_equation_correct(x_equations) do
 
-          true ->
-            :no_op
+          {:ok, all_items}
+        else
+          _ ->
+            with {:ok, y_equations} <- Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1),
+              true <- Rule.has_yslot_gap(all_items, staging_items),
+              true <- Rule.is_equation_correct(y_equations) do
+             
+              {:ok, all_items}
+            else
+              _ -> :no_op
+            end
         end
 
       _ ->
