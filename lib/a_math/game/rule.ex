@@ -17,30 +17,31 @@ defmodule AMath.Game.Rule do
     |> Enum.member?(a)
   end
   
-  defp is_operator(a) when is_binary(a) do
+  def is_operator(a) when is_binary(a) do
     Enum.member? ~w(+ - x ÷ +/- x/÷ =), a
   end
   
+  defp operators_map() do
+    %{
+      "+" => "+",
+      "-" => "-",
+      "x" => "*",
+      "÷" => "/",
+      "+/-" => "+",
+      "x/÷" => "*",
+      "=" => "="
+    }
+  end
+  
+  def is_calc_operator(a) do
+    operators_map()
+    |> Map.values()
+    |> Enum.member?(a)
+  end
+  
   defp to_operator(a) when is_binary(a) do
-    case a do
-      "+" ->
-        a
-      "-" ->
-        a
-      "x" ->
-        "*"
-      "÷" ->
-        "/"
-      "+/-" ->
-        "+"
-      "x/÷" ->
-        "*"
-      "=" ->
-        "=="
-      _ ->
-        ArgumentError
-        |> raise(message: "Only + - x ÷ +/- x/÷ operators are supported.")
-    end
+    Map.get(operators_map(), a) ||
+      raise(ArgumentError, message: "Only + - x ÷ +/- x/÷ operators are supported.")
   end
   
   def is_blank(a) when is_binary(a) do
@@ -82,6 +83,22 @@ defmodule AMath.Game.Rule do
      end
   end
   
+  def has_xslot_gap(all, items) do
+    Enum.all?(items, fn a ->
+      not Enum.any?(all, fn a0 ->
+        a0.j == a.j && (a0.i == a.i + 1 || a0.i == a.i - 1)
+      end)
+    end)
+  end
+  
+  def has_yslot_gap(all, items) do
+    Enum.all?(items, fn a ->
+      not Enum.any?(all, fn a0 ->
+        a0.i == a.i && (a0.j == a.j + 1 || a0.j == a.j - 1)
+      end)
+    end)
+  end
+  
   def at_x(x), do: fn(a) -> a.i == x end
   def at_y(y), do: fn(a) -> a.j == y end
   
@@ -94,16 +111,18 @@ defmodule AMath.Game.Rule do
     |> Enum.sort_by(f_by)
   end
   
-  def is_connected(items, staging_items, f_by, f_at) do
+  def form_equation(items, staging_items, f_by, f_at) do
     staging_index = Enum.map(staging_items, f_by)
-    index_chunks = Enum.chunk_by(0..board_size(), fn axis ->
-      Enum.any?(items, f_at.(axis)) # magic!
-    end)
-      
-    Enum.any?(index_chunks, fn index_chunk ->
-      staging_index -- index_chunk == [] &&
-      Enum.count(index_chunk) > Enum.count(staging_items)
-    end)
+    
+    index_chunk =
+      0..board_size()
+      |> Enum.chunk_by(fn axis -> Enum.any?(items, f_at.(axis)) end)
+      |> Enum.find(fn index_chunk -> staging_index -- index_chunk == [] &&
+           Enum.count(index_chunk) > Enum.count(staging_items) end)
+    
+    if index_chunk do
+      {:ok, Enum.filter(items, fn item -> Enum.member?(index_chunk, f_by.(item)) end)}
+    end
   end
   
   def take_random_rest(items, n) when is_integer(n) do
@@ -115,24 +134,57 @@ defmodule AMath.Game.Rule do
   
   def is_equation_correct(items) do
     items = Enum.map(items, &(&1.item))
-    
+
     with {:ok, equations} <- IO.inspect(calculable_map(items)),
       {:ok, ast} <- IO.inspect(validate_syntax(equations)),
-      {:ok, _} <- IO.inspect(validate_expr(items)),
-      {equality, _} <- IO.inspect(Code.eval_quoted(ast)) do
-      
-      equality
+      {:ok, _} <- IO.inspect(validate_expr(equations)),
+      :ok <- Macro.validate(validate_ast(ast))
+    do
+      all_expressions_matched?(ast)
     else
-      _ ->
-        false
+      _ -> false
+    end
+  end
+
+  def all_expressions_matched?(ast) do
+    try do
+      case IO.inspect(Code.eval_quoted(ast)) do
+        {:error, _} -> false
+        _ -> true
+      end
+    rescue
+      MatchError -> false
     end
   end
   
   def validate_syntax(equations) when is_list(equations) do
-    Enum.join(equations) |> Code.string_to_quoted()
+    Code.string_to_quoted(Enum.join(equations))
+  end
+  
+  def validate_ast({operator, line, [number]}) do
+    case {operator, number} do
+      {:-, a} when a != 0 ->
+        {:-, line, [a]}
+      _ ->
+        {"Only unary minus with non-zero number is allowed"}
+    end
+  end
+  def validate_ast({operator, line, [left,right]}) do
+    cond do
+      is_integer(left) && is_integer(right) ->
+        {operator, line, [left/1, right/1]}
+      is_integer(left) ->
+        {operator, line, [left/1, validate_ast(right)]}
+      is_integer(right) ->
+        {operator, line, [validate_ast(left), right/1]}
+      true ->
+        {operator, line, [validate_ast(left), validate_ast(right)]}
+    end
   end
   
   def validate_expr(expressions) do
+    expressions = Enum.map(expressions, &to_string/1)
+
     validate = fn expr ->
       case expr do
         [_] ->
@@ -147,7 +199,7 @@ defmodule AMath.Game.Rule do
     end
 
     expressions
-    |> Enum.chunk_by(&is_operator/1)
+    |> Enum.chunk_by(&is_calc_operator/1)
     |> Enum.all?(validate)
     |> if(do: {:ok, expressions}, else: {:error, expressions})
   end
@@ -162,7 +214,7 @@ defmodule AMath.Game.Rule do
           is_blank(item) -> 1
           true ->
             ArgumentError
-            |> raise(message: "Only 0-20 and + - x ÷ +/- x/÷ are supported.")
+            |> raise(message: "Only 0-20 and + - x ÷ are supported.")
         end
       end)
     

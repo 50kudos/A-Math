@@ -63,13 +63,12 @@ defmodule AMath.Game do
   end
 
   defp commit_board(%{items: items} = game, %{"boardItems" => staging_items}) do
-    new_board = commit(items.boardItems, staging_items)
-
-    if new_board == items.boardItems do
-      {:error, :not_found}
-    else
+    with {:ok, new_board} <- commit(items.boardItems, staging_items) do
       new_data = update_in(game, [:items, :boardItems], fn _ -> new_board end)
       {:ok, new_data, Enum.count(staging_items)}
+    else
+      _ ->
+        {:error, :not_found}
     end
   end
 
@@ -83,49 +82,60 @@ defmodule AMath.Game do
         
         cond do
           board_items == [] &&
+          # Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) &&
           Rule.is_equation_correct(all_xitems) ->
-            all_items
+            {:ok, all_items}
 
-          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) &&
-          Rule.is_equation_correct(all_xitems) ->
-            all_items
+          {:ok, equations} =
+            Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
+              Rule.has_xslot_gap(all_items, staging_items) &&
+              Rule.is_equation_correct(equations) &&
+              {:ok, all_items}
 
           true ->
-            board_items
+            :no_op
         end
       {:constant_y, y, _min_x, _max_x} ->
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
         
         cond do
           board_items == [] &&
+          # Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) &&
           Rule.is_equation_correct(all_yitems) ->
-            all_items
+            {:ok, all_items}
 
-          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) &&
-          Rule.is_equation_correct(all_yitems) ->
-            all_items
+          {:ok, equations} =
+            Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
+              Rule.has_yslot_gap(all_items, staging_items) &&
+              Rule.is_equation_correct(equations) &&
+              {:ok, all_items}
 
           true ->
-            board_items
+            :no_op
         end
       {:point, x, y} ->
         all_xitems = Rule.filter_sort(all_items, Rule.at_x(x), Rule.by_y)
-        x_ok =
-          Rule.is_connected(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) &&
-          Rule.is_equation_correct(all_xitems)
-        
         all_yitems = Rule.filter_sort(all_items, Rule.at_y(y), Rule.by_x)
-        y_ok =
-          Rule.is_connected(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) &&
-          Rule.is_equation_correct(all_yitems)
-        
-        case {x_ok, y_ok} do
-          {true, _} -> all_items
-          {_, true} -> all_items
-          _ -> board_items
+
+        cond do
+          {:ok, x_equations} =
+            Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1) ->
+              Rule.has_xslot_gap(all_items, staging_items) &&
+              Rule.is_equation_correct(x_equations) &&
+              {:ok, all_items}
+              
+          {:ok, y_equations} =
+            Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1) ->
+              Rule.has_yslot_gap(all_items, staging_items) &&
+              Rule.is_equation_correct(y_equations) &&
+              {:ok, all_items}
+
+          true ->
+            :no_op
         end
+
       _ ->
         :no_op
     end

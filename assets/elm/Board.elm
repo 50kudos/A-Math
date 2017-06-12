@@ -167,7 +167,7 @@ view model toMsg =
         desc p1 p2 p3 =
             div [ class "aspect-ratio--object flex flex-column justify-center" ]
                 [ p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p1 ]
-                , p [ class "db ma0 f6 f5-ns lh-solid" ] [ text p2 ]
+                , p [ class "db ma0 f7 f5-ns lh-solid" ] [ text p2 ]
                 , p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p3 ]
                 ]
 
@@ -187,22 +187,22 @@ view model toMsg =
                         Nothing ->
                             case multiplier of
                                 E3 ->
-                                    slot (Put i j) "bg-red" [ desc "TRIPPLE" "3X" "Equation" ]
+                                    slot (Put i j) "bg-red dark-gray" [ desc "TRIPPLE" "3X" "Equation" ]
 
                                 E2 ->
-                                    slot (Put i j) "bg-yellow" [ desc "DOUBLE" "2X" "Equation" ]
+                                    slot (Put i j) "bg-yellow dark-gray" [ desc "DOUBLE" "2X" "Equation" ]
 
                                 P3 ->
-                                    slot (Put i j) "bg-blue" [ desc "TRIPPLE" "3X" "PIECE" ]
+                                    slot (Put i j) "bg-blue dark-gray" [ desc "TRIPPLE" "3X" "PIECE" ]
 
                                 P2 ->
-                                    slot (Put i j) "bg-orange" [ desc "DOUBLE" "2X" "PIECE" ]
+                                    slot (Put i j) "bg-orange dark-gray" [ desc "DOUBLE" "2X" "PIECE" ]
 
                                 X1 ->
-                                    slot (Put i j) "bg-gray2" []
+                                    slot (Put i j) "bg-gray2 dark-gray" []
 
                                 X_ ->
-                                    slot (Put i j) "bg-mid-gray2" []
+                                    slot (Put i j) "bg-mid-gray2 dark-gray" []
 
         row : Int -> List Multiplier -> Html Msg
         row i cols =
