@@ -15,9 +15,20 @@ defmodule AMath.Game do
   end
 
   def create_item(item) do
-    item
-    |> Data.changeset(AMath.Game.Intializer.sample())
-    |> Repo.update()
+    initial_data =
+      AMath.Game.Intializer.sample()
+
+    with {:ok, new_data, random_items} <- take_rest(initial_data, 8)
+    do
+      new_data =
+        update_in(new_data, [:items, :myItems],
+          fn _ -> Enum.map(random_items, &(%{item: &1.item, point: &1.point}))
+        end)
+      
+      %Item{id: item.id}
+      |> Data.changeset(new_data)
+      |> Repo.update()
+    end
   end
 
   def update_commit(%Item{} = prev_data, attrs) do
@@ -25,8 +36,8 @@ defmodule AMath.Game do
 
     with {:ok, attrs} <- is_any_item(attrs),
       {:ok, new_data, committed_count} <- commit_board(game, attrs),
-      {:ok, new_data, ramdom_items} <- take_rest(new_data, committed_count),
-      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items)
+      {:ok, new_data, random_items} <- take_rest(new_data, committed_count),
+      {:ok, new_data} <- update_mine(new_data, attrs, random_items)
     do
       prev_data
       |> Data.changeset(new_data)
@@ -39,9 +50,9 @@ defmodule AMath.Game do
     exchanged_count = Enum.count(attrs["boardItems"])
     
     with {:ok, attrs} <- is_any_item(attrs),
-      {:ok, new_data, ramdom_items} <- take_rest(game, exchanged_count),
+      {:ok, new_data, random_items} <- take_rest(game, exchanged_count),
       {:ok, new_data} <- add_rest(new_data, attrs),
-      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items)
+      {:ok, new_data} <- update_mine(new_data, attrs, random_items)
     do
       prev_data
       |> Data.changeset(new_data)
