@@ -14,10 +14,10 @@ defmodule AMath.Game do
     Repo.get!(Item, id)
   end
 
-  def create_item(attrs \\ %{}) do
-    %Item{}
-    |> Data.changeset(attrs)
-    |> Repo.insert()
+  def create_item(item) do
+    item
+    |> Data.changeset(AMath.Game.Intializer.sample())
+    |> Repo.update()
   end
 
   def update_commit(%Item{} = prev_data, attrs) do

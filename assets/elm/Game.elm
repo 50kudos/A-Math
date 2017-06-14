@@ -17,7 +17,8 @@ type alias Model =
 
 
 type Msg
-    = Fetch (Result Http.Error Model)
+    = ResetGame
+    | Fetch (Result Http.Error Model)
     | Patch (Result Http.Error Model)
     | Exchange
     | Push
@@ -99,6 +100,9 @@ normalUpdate msg model =
 
                 FromBoard _ ->
                     { model | board = Board.update msg model.board } ! [ Cmd.none ]
+
+        ResetGame ->
+            ( model, patchItems <| Http.jsonBody (Board.encoder "reset" model.board) )
 
         Patch (Ok gameData) ->
             if
@@ -236,15 +240,20 @@ view model =
             ]
         , section [ class "pl3" ]
             [ a
-                [ class "f6 link db br1 ba ph3 pv2 near-white pointer"
+                [ class "f6 link db br1 ba ph3 pv2 near-white tc pointer"
                 , onClick (beforeSubmit model)
                 ]
                 [ text "Submit" ]
             , a
-                [ class "mt2 f6 link db br1 ba ph3 pv2 near-white pointer"
+                [ class "mt2 f6 link db br1 ba ph3 pv2 near-white tc pointer"
                 , onClick Exchange
                 ]
                 [ text "Exchange" ]
+            , a
+                [ class "mt2 f6 link db br1 ba ph3 pv2 near-white tc pointer"
+                , onClick ResetGame
+                ]
+                [ text "Reset Game" ]
             ]
         ]
 

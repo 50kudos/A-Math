@@ -46,4 +46,7 @@ defmodule AMath.Web.ItemController do
   defp update_data("exchange", item, item_params) do
     Game.update_exchange(item, item_params)
   end
+  defp update_data("reset", item, _item_params) do
+    Game.create_item(item)
+  end
 end
