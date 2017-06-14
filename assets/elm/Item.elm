@@ -7,13 +7,15 @@ module Item
         , recallItem
         , batchRecall
         , hideMovedItem
+        , viewChoices
+        , itemChoices
         , decoder
         , myItems
         , restItems
         )
 
 import Html exposing (..)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import Json.Decode as JD
 import List.Extra
@@ -181,3 +183,30 @@ restItems { restItems } =
     in
         section [ class "dn flex-ns flex-wrap flex-column-l mw5-l mb4 ph5 ph3-l w-100 vh-50-l" ]
             (List.map tile restItems)
+
+
+itemChoices : Model -> List String
+itemChoices { restItems } =
+    restItems
+        |> List.filter (\item -> not <| List.member item.item [ "blank", "+/-", "x/÷" ])
+        |> List.map .item
+
+
+viewChoices : (String -> msg) -> List String -> Html msg
+viewChoices msg listA =
+    let
+        numPad : String -> Html msg
+        numPad item =
+            span
+                [ class "flex items-center justify-center w2 h2 pa1 ba b--light-yellow light-yellow pointer f3 ma3"
+                , onClick (msg item)
+                ]
+                [ text item ]
+    in
+        div
+            [ class <|
+                "flex justify-center justify-start-ns flex-wrap absolute mw6 "
+                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
+            , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
+            ]
+            (List.map numPad listA)

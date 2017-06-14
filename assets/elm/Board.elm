@@ -9,6 +9,7 @@ module Board
         , clearStaging
         , commitUnchanged
         , exchanged
+        , markChoice
         , view
         , decoder
         , encoder
@@ -30,7 +31,7 @@ type alias Model =
 
 
 type alias CommittedItem =
-    { item : String, i : Int, j : Int, point : Int }
+    { item : String, i : Int, j : Int, point : Int, value : String }
 
 
 type alias StagingItem a =
@@ -99,7 +100,7 @@ addItem msg ( item, point ) model =
             Ok
                 { model
                     | stagingItems =
-                        { item = item, i = i, j = j, picked = False, point = point } :: model.stagingItems
+                        { item = item, i = i, j = j, picked = False, point = point, value = item } :: model.stagingItems
                 }
 
         _ ->
@@ -132,6 +133,21 @@ exchanged existing new =
     existing.committedItems == new.committedItems
 
 
+markChoice : Int -> Int -> String -> Model -> Model
+markChoice i j strItem model =
+    { model
+        | stagingItems =
+            List.map
+                (\item ->
+                    if item.i == i && item.j == j then
+                        { item | value = strItem }
+                    else
+                        item
+                )
+                model.stagingItems
+    }
+
+
 board : List (List Multiplier)
 board =
     [ [ E3, X1, X1, P2, X1, X1, X1, E3, X1, X1, X1, P2, X1, X1, E3 ]
@@ -152,8 +168,8 @@ board =
     ]
 
 
-view : Model -> (Msg -> msg) -> Html msg
-view model toMsg =
+view : Maybe ( x, Int, Int ) -> Model -> (Msg -> msg) -> Html msg
+view choice model toMsg =
     let
         slot : Msg -> String -> List (Html Msg) -> Html Msg
         slot msg colour body =
@@ -175,13 +191,13 @@ view model toMsg =
         viewSlot i j multiplier =
             case List.Extra.find (H.isAtIndex i j) model.committedItems of
                 Just item ->
-                    slot Nope "bg-dark-blue light-gray" [ desc "" (H.cast item.item) "" ]
+                    slot Nope "bg-dark-blue light-gray b--dark-gray" [ desc "" (H.castChoice item.item item.value) "" ]
 
                 Nothing ->
                     case List.Extra.find (H.isAtIndex i j) model.stagingItems of
                         Just item ->
                             slot (Pick item)
-                                ((H.colorByPick item) ++ "pointer b--dark-blue")
+                                ((H.colorByPick item) ++ "pointer" ++ (H.slotHeighlight i j choice))
                                 [ desc "" (H.cast item.item) "" ]
 
                         Nothing ->
@@ -217,11 +233,12 @@ decoder =
     let
         committedItemsDecoder : JD.Decoder CommittedItem
         committedItemsDecoder =
-            JD.map4 CommittedItem
+            JD.map5 CommittedItem
                 (JD.field "item" JD.string)
                 (JD.field "i" JD.int)
                 (JD.field "j" JD.int)
                 (JD.field "point" JD.int)
+                (JD.field "value" JD.string)
     in
         JD.map2 Model
             (JD.at [ "boardItems" ] <| JD.list committedItemsDecoder)
@@ -232,12 +249,13 @@ encoder : String -> Model -> JE.Value
 encoder patchType { stagingItems } =
     let
         encodeItem : StagingItem CommittedItem -> JE.Value
-        encodeItem { item, i, j, point } =
+        encodeItem { item, i, j, point, value } =
             JE.object
                 [ ( "item", JE.string item )
                 , ( "i", JE.int i )
                 , ( "j", JE.int j )
                 , ( "point", JE.int point )
+                , ( "value", JE.string value )
                 ]
     in
         JE.object

@@ -137,9 +137,10 @@ defmodule AMath.Game.Rule do
   end
   
   def is_equation_correct(items) do
-    items = Enum.map(items, &(&1.item))
+    items = Enum.map(items, &(&1.value))
 
-    with {:ok, equations} <- IO.inspect(calculable_map(items)),
+    with true <- Enum.member?(items, "="),
+      {:ok, equations} <- IO.inspect(calculable_map(items)),
       {:ok, ast} <- IO.inspect(validate_syntax(equations)),
       {:ok, _} <- IO.inspect(validate_expr(equations)),
       :ok <- Macro.validate(ast)
@@ -170,7 +171,7 @@ defmodule AMath.Game.Rule do
   def validate_ast({operator, line, [number]}) do
     case {operator, number} do
       {:-, a} when a != 0 ->
-        {:-, line, [a]}
+        {:-, line, [a/1]}
       _ ->
         {"Only unary minus with non-zero number is allowed"}
     end

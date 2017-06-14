@@ -23,6 +23,7 @@ defmodule AMath.Game.Data do
       field :i, :integer
       field :j, :integer
       field :point, :integer
+      field :value, :string
     end
   end
   
@@ -52,7 +53,7 @@ defmodule AMath.Game.Data do
   
   def boardItems_changeset(struct, attrs) do
     struct
-    |> cast(attrs, [:item, :i, :j, :point])
+    |> cast(attrs, [:item, :i, :j, :point, :value])
   end
 
   def to_map(%__MODULE_{items: struct}) do
@@ -69,7 +70,8 @@ defmodule AMath.Game.Data do
         i: (board_item["i"] || board_item.i),
         j: (board_item["j"] || board_item.j),
         item: (board_item["item"] || board_item.item),
-        point: (board_item["point"] || board_item.point)
+        point: (board_item["point"] || board_item.point),
+        value: (board_item["value"] || board_item.value)
       }
     end
     

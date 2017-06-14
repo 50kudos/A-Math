@@ -26,8 +26,8 @@ defmodule AMath.Game do
     with {:ok, attrs} <- is_any_item(attrs),
       {:ok, new_data, committed_count} <- commit_board(game, attrs),
       {:ok, new_data, ramdom_items} <- take_rest(new_data, committed_count),
-      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items) do
-      
+      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items)
+    do
       prev_data
       |> Data.changeset(new_data)
       |> Repo.update()
@@ -41,8 +41,8 @@ defmodule AMath.Game do
     with {:ok, attrs} <- is_any_item(attrs),
       {:ok, new_data, ramdom_items} <- take_rest(game, exchanged_count),
       {:ok, new_data} <- add_rest(new_data, attrs),
-      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items) do
-    
+      {:ok, new_data} <- update_mine(new_data, attrs, ramdom_items)
+    do
       prev_data
       |> Data.changeset(new_data)
       |> Repo.update()
@@ -63,7 +63,8 @@ defmodule AMath.Game do
   end
 
   defp commit_board(%{items: items} = game, %{"boardItems" => staging_items}) do
-    with {:ok, new_board} <- commit(items.boardItems, staging_items) do
+    with {:ok, new_board} <- commit(items.boardItems, staging_items)
+    do
       new_data = update_in(game, [:items, :boardItems], fn _ -> new_board end)
       {:ok, new_data, Enum.count(staging_items)}
     else
