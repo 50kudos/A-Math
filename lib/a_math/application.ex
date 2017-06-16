@@ -12,6 +12,7 @@ defmodule AMath.Application do
       supervisor(AMath.Repo, []),
       # Start the endpoint when the application starts
       supervisor(AMath.Web.Endpoint, []),
+      supervisor(AMath.Web.PlayerPresence, []),
       # Start your own worker by calling: AMath.Worker.start_link(arg1, arg2, arg3)
       # worker(AMath.Worker, [arg1, arg2, arg3]),
     ]

@@ -2,7 +2,7 @@ defmodule AMath.Web.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", AMath.Web.RoomChannel
+  channel "game_room:lobby", AMath.Web.GameRoomChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
