@@ -222,39 +222,37 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex flex-wrap justify-center items-center" ]
-        [ div [ class "flex justify-center items-center flex-wrap pv4 vh-75-l" ]
-            [ Item.restItems model.game.items
-            , section [ class "w-40-l mh4-l" ]
-                [ div [ class "relative" ]
-                    [ Board.view (List.head model.game.choices) model.game.board BoardMsg
-                    , Game.viewChoiceFor (List.head model.game.choices) model.game |> map GameMsg
-                    ]
-                , div [ class "flex flex-wrap justify-between mt2 mt4-ns" ]
-                    [ Item.myItems model.game.items ItemMsg
-                    ]
+    div [ class "flex flex-wrap flex-nowrap-l justify-center items-center" ]
+        [ Item.restItems model.game.items
+        , section [ class "w-40-l mh4-l mb3-l" ]
+            [ div [ class "relative" ]
+                [ Board.view (List.head model.game.choices) model.game.board BoardMsg
+                , Game.viewChoiceFor (List.head model.game.choices) model.game |> map GameMsg
                 ]
-            , section [ class "flex justify-between flex-auto flex-none-l db-l mt3 mt0-l ml2-l" ]
-                [ a
-                    [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer"
-                    , onClick Exchange
-                    ]
-                    [ text "Exchange" ]
-                , a
-                    [ class "f6 link db ba pa4 near-white tc pointer flex-auto bg-dark-green mv5-l"
-                    , onClick (beforeSubmit model.game)
-                    ]
-                    [ text "SUBMIT" ]
-                , a
-                    [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
-                    , onClick ResetGame
-                    ]
-                    [ text "Reset Game" ]
-                , a
-                    [ class "f6 link db ba ph2 pv2 near-white pointer tc"
-                    , onClick BatchRecall
-                    ]
-                    [ text "Recall" ]
+            , div [ class "flex flex-wrap justify-between mt2 mt4-ns" ]
+                [ Item.myItems model.game.items ItemMsg
                 ]
+            ]
+        , section [ class "flex justify-between flex-auto flex-none-l db-l mt3 mt0-l ml2-l" ]
+            [ a
+                [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
+                , onClick Exchange
+                ]
+                [ text "Exchange" ]
+            , a
+                [ class "f6 link db ba pv2 pa4-l near-white tc pointer flex-auto bg-dark-blue hover-bg-blue mv5-l"
+                , onClick (beforeSubmit model.game)
+                ]
+                [ text "SUBMIT" ]
+            , a
+                [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
+                , onClick ResetGame
+                ]
+                [ text "Reset Game" ]
+            , a
+                [ class "f6 link db ba ph2 pv2 near-white dim pointer tc"
+                , onClick BatchRecall
+                ]
+                [ text "Recall" ]
             ]
         ]
