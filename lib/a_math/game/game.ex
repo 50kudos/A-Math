@@ -47,7 +47,7 @@ defmodule AMath.Game do
     end
   end
   
-  def generate_game_id() do
+  defp generate_game_id() do
     UUID.generate()
     |> String.split("-")
     |> List.last

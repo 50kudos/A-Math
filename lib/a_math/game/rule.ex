@@ -1,53 +1,6 @@
 defmodule AMath.Game.Rule do
   alias AMath.Game.Data
-
-  defp board_size() do
-    15 - 1 # For zero based index
-  end
-
-  defp is_digit(a) when is_binary(a)  do
-    0..9
-    |> Enum.map(&to_string/1)
-    |> Enum.member?(a)
-  end
   
-  defp is_tens(a) when is_binary(a) do
-    10..20
-    |> Enum.map(&to_string/1)
-    |> Enum.member?(a)
-  end
-  
-  def is_operator(a) when is_binary(a) do
-    Enum.member? ~w(+ - x ÷ +/- x/÷ =), a
-  end
-  
-  defp operators_map() do
-    %{
-      "+" => "+",
-      "-" => "-",
-      "x" => "*",
-      "÷" => "/",
-      "+/-" => "+",
-      "x/÷" => "*",
-      "=" => "="
-    }
-  end
-  
-  def is_calc_operator(a) do
-    operators_map()
-    |> Map.values()
-    |> Enum.member?(a)
-  end
-  
-  defp to_operator(a) when is_binary(a) do
-    Map.get(operators_map(), a) ||
-      raise(ArgumentError, message: "Only + - x ÷ +/- x/÷ operators are supported.")
-  end
-  
-  def is_blank(a) when is_binary(a) do
-    a == "blank"
-  end
-
   def get_linear([%{i: x0,j: y0}|rest] = points) when is_list(points) do
     cond do
       rest == [] ->
@@ -151,7 +104,7 @@ defmodule AMath.Game.Rule do
     end
   end
 
-  def all_expressions_matched?(ast) do
+  defp all_expressions_matched?(ast) do
     try do
       case IO.inspect(Code.eval_quoted(ast)) do
         {:error, _} -> false
@@ -162,13 +115,13 @@ defmodule AMath.Game.Rule do
     end
   end
   
-  def validate_syntax(equations) when is_list(equations) do
+  defp validate_syntax(equations) when is_list(equations) do
     with {:ok, ast} <- Code.string_to_quoted(Enum.join(equations)) do
       {:ok, validate_ast(ast)}
     end
   end
   
-  def validate_ast({operator, line, [number]}) do
+  defp validate_ast({operator, line, [number]}) do
     case {operator, number} do
       {:-, a} when a != 0 ->
         {:-, line, [a/1]}
@@ -176,7 +129,7 @@ defmodule AMath.Game.Rule do
         {"Only unary minus with non-zero number is allowed"}
     end
   end
-  def validate_ast({operator, line, [left,right]}) do
+  defp validate_ast({operator, line, [left,right]}) do
     cond do
       is_integer(left) && is_integer(right) ->
         {operator, line, [left/1, right/1]}
@@ -189,7 +142,7 @@ defmodule AMath.Game.Rule do
     end
   end
   
-  def validate_expr(expressions) do
+  defp validate_expr(expressions) do
     expressions = Enum.map(expressions, &to_string/1)
 
     validate = fn expr ->
@@ -211,14 +164,56 @@ defmodule AMath.Game.Rule do
     |> if(do: {:ok, expressions}, else: {:error, expressions})
   end
   
-  def calculable_map(items) do
+  defp board_size() do
+    15 - 1 # For zero based index
+  end
+
+  defp is_digit(a) when is_binary(a)  do
+    0..9
+    |> Enum.map(&to_string/1)
+    |> Enum.member?(a)
+  end
+  
+  defp is_tens(a) when is_binary(a) do
+    10..20
+    |> Enum.map(&to_string/1)
+    |> Enum.member?(a)
+  end
+  
+  defp is_operator(a) when is_binary(a) do
+    Enum.member? ~w(+ - x ÷ +/- x/÷ =), a
+  end
+  
+  defp operators_map() do
+    %{
+      "+" => "+",
+      "-" => "-",
+      "x" => "*",
+      "÷" => "/",
+      "+/-" => "+",
+      "x/÷" => "*",
+      "=" => "="
+    }
+  end
+  
+  defp is_calc_operator(a) do
+    operators_map()
+    |> Map.values()
+    |> Enum.member?(a)
+  end
+  
+  defp to_operator(a) when is_binary(a) do
+    Map.get(operators_map(), a) ||
+      raise(ArgumentError, message: "Only + - x ÷ +/- x/÷ operators are supported.")
+  end
+  
+  defp calculable_map(items) do
     items =
       Enum.map(items, fn item ->
         cond do
           is_digit(item) -> String.to_integer(item)
           is_tens(item) -> String.to_integer(item)
           is_operator(item) -> to_operator(item)
-          is_blank(item) -> 1
           true ->
             ArgumentError
             |> raise(message: "Only 0-20 and + - x ÷ are supported.")
