@@ -1,17 +1,25 @@
 module Main exposing (main)
 
-import Html exposing (Html, map)
-import Phoenix.Socket
-import Phoenix.Channel
-import Phoenix.Push
+import Html exposing (Html, map, div, a, text, section)
+import Html.Events exposing (onClick)
+import Html.Attributes exposing (class)
+import Phoenix.Socket as Socket
+import Phoenix.Channel as Channel
+import Phoenix.Push as Pusher
 import Json.Encode as JE
 import Json.Decode as JD
 import Game
+import Board
+import Item
 
 
-main : Program Never Model Msg
+type alias Flags =
+    { gameId : String }
+
+
+main : Program Flags Model Msg
 main =
-    Html.program
+    Html.programWithFlags
         { init = init
         , view = view
         , update = update
@@ -21,23 +29,32 @@ main =
 
 type alias Model =
     { game : Game.Model
-    , phxSocket : Phoenix.Socket.Socket Msg
+    , phxSocket : Socket.Socket Msg
+    , gameId : String
     }
 
 
 type Msg
     = GameMsg Game.Msg
-    | PhoenixMsg (Phoenix.Socket.Msg Msg)
+    | ItemMsg Item.Msg
+    | BoardMsg Board.Msg
+    | PhoenixMsg (Socket.Msg Msg)
     | ShowJoinedMessage JE.Value
+    | ResetGame
+    | Exchange
+    | BatchRecall
+    | EnqueueChoices (List ( String, Int, Int ))
+    | Push
+    | PatchResponse JE.Value
 
 
-init : ( Model, Cmd Msg )
-init =
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     let
         ( phxSocket, phxCmd ) =
-            joinChannel
+            joinChannel flags.gameId
     in
-        { game = Game.init, phxSocket = phxSocket }
+        { game = Game.init, phxSocket = phxSocket, gameId = flags.gameId }
             ! [ Cmd.map PhoenixMsg phxCmd
               ]
 
@@ -49,13 +66,32 @@ update msg model =
             let
                 ( game, gameCmd ) =
                     Game.update msg model.game
+
+                choices =
+                    List.drop 1 game.choices
             in
-                { model | game = game } ! [ Cmd.map GameMsg gameCmd ]
+                case game.choices of
+                    [] ->
+                        { model | game = game } ! [ Cmd.map GameMsg gameCmd ]
+
+                    _ ->
+                        case choices of
+                            [] ->
+                                update Push { model | game = { game | choices = choices } }
+
+                            _ ->
+                                { model | game = { game | choices = choices } } ! [ Cmd.map GameMsg gameCmd ]
+
+        ItemMsg msg ->
+            { model | game = Game.updateItems msg model.game } ! [ Cmd.none ]
+
+        BoardMsg msg ->
+            { model | game = Game.updateBoard msg model.game } ! [ Cmd.none ]
 
         PhoenixMsg msg ->
             let
                 ( phxSocket, phxCmd ) =
-                    Phoenix.Socket.update msg model.phxSocket
+                    Socket.update msg model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }
                 , Cmd.map PhoenixMsg phxCmd
@@ -69,25 +105,156 @@ update msg model =
                 Err error ->
                     Debug.log error ( model, Cmd.none )
 
+        ResetGame ->
+            let
+                reqBody =
+                    (Board.encoder "reset" model.game.board)
 
-joinChannel : ( Phoenix.Socket.Socket Msg, Cmd (Phoenix.Socket.Msg Msg) )
-joinChannel =
+                ( phxSocket, phxCmd ) =
+                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+            in
+                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+
+        PatchResponse response ->
+            case JD.decodeValue Game.decoder response of
+                Ok gameData ->
+                    if
+                        Board.commitUnchanged model.game.board gameData.board
+                            && not (Board.exchanged model.game.board gameData.board)
+                    then
+                        model ! [ Cmd.none ]
+                    else
+                        { model | game = gameData } ! [ Cmd.none ]
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
+        EnqueueChoices forPosition ->
+            let
+                game =
+                    model.game
+
+                updatedGame =
+                    { game | choices = forPosition }
+            in
+                { model | game = updatedGame } ! [ Cmd.none ]
+
+        Exchange ->
+            let
+                reqBody =
+                    (Board.encoder "exchange" model.game.board)
+
+                ( phxSocket, phxCmd ) =
+                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+            in
+                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+
+        Push ->
+            let
+                reqBody =
+                    (Board.encoder "commit" model.game.board)
+
+                ( phxSocket, phxCmd ) =
+                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+            in
+                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+
+        BatchRecall ->
+            let
+                game =
+                    model.game
+
+                game_ =
+                    { game
+                        | items = Item.batchRecall game.items
+                        , board = Board.clearStaging game.board
+                    }
+            in
+                { model | game = game_ }
+                    ! [ Cmd.none ]
+
+
+joinChannel : String -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
+joinChannel gameId =
     let
+        joinPayload =
+            JE.object [ ( "game_id", JE.string gameId ) ]
+
         phxSocket =
-            Phoenix.Socket.init "ws://localhost:4000/socket/websocket"
+            Socket.init "ws://localhost:4000/socket/websocket"
 
         channel =
-            Phoenix.Channel.init "game_room:lobby"
-                |> Phoenix.Channel.onJoin ShowJoinedMessage
+            Channel.init "game_room:lobby"
+                |> Channel.onJoin ShowJoinedMessage
+                |> Channel.withPayload joinPayload
     in
-        Phoenix.Socket.join channel phxSocket
+        Socket.join channel phxSocket
+
+
+patchItems : String -> JE.Value -> Pusher.Push Msg
+patchItems gameId reqBody =
+    Pusher.init ("reset_game:" ++ gameId) "game_room:lobby"
+        |> Pusher.withPayload reqBody
+        |> Pusher.onOk PatchResponse
+
+
+beforeSubmit : Game.Model -> Msg
+beforeSubmit model =
+    let
+        filterChoicable : Board.Model -> List ( String, Int, Int )
+        filterChoicable board =
+            board.stagingItems
+                |> List.filter (\item -> List.member item.item [ "blank", "+/-", "x/÷" ])
+                |> List.map (\item -> ( item.item, item.i, item.j ))
+    in
+        case filterChoicable model.board of
+            [] ->
+                Push
+
+            choiceList ->
+                EnqueueChoices choiceList
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Phoenix.Socket.listen model.phxSocket PhoenixMsg
+    Socket.listen model.phxSocket PhoenixMsg
 
 
 view : Model -> Html Msg
 view model =
-    Game.view model.game |> map GameMsg
+    div [ class "flex flex-wrap justify-center items-center" ]
+        [ div [ class "flex justify-center items-center flex-wrap pv4 vh-75-l" ]
+            [ Item.restItems model.game.items
+            , section [ class "w-40-l mh4-l" ]
+                [ div [ class "relative" ]
+                    [ Board.view (List.head model.game.choices) model.game.board BoardMsg
+                    , Game.viewChoiceFor (List.head model.game.choices) model.game |> map GameMsg
+                    ]
+                , div [ class "flex flex-wrap justify-between mt2 mt4-ns" ]
+                    [ Item.myItems model.game.items ItemMsg
+                    ]
+                ]
+            , section [ class "flex justify-between flex-auto flex-none-l db-l mt3 mt0-l ml2-l" ]
+                [ a
+                    [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer"
+                    , onClick Exchange
+                    ]
+                    [ text "Exchange" ]
+                , a
+                    [ class "f6 link db ba pa4 near-white tc pointer flex-auto bg-dark-green mv5-l"
+                    , onClick (beforeSubmit model.game)
+                    ]
+                    [ text "SUBMIT" ]
+                , a
+                    [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
+                    , onClick ResetGame
+                    ]
+                    [ text "Reset Game" ]
+                , a
+                    [ class "f6 link db ba ph2 pv2 near-white pointer tc"
+                    , onClick BatchRecall
+                    ]
+                    [ text "Recall" ]
+                ]
+            ]
+        ]

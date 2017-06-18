@@ -3,6 +3,7 @@ defmodule AMath.Game do
   The boundary for the Game system.
   """
   import Ecto.{Query, Changeset}, warn: false
+  alias Ecto.UUID
   alias AMath.Repo
   alias AMath.Game.{Item, Data, Rule}
 
@@ -11,13 +12,12 @@ defmodule AMath.Game do
   end
 
   def get_item!(id) do
-    Repo.get!(Item, id)
+    Repo.get_by!(Item, game_id: id)
   end
-
-  def create_item(item) do
-    initial_data =
-      AMath.Game.Intializer.sample()
-
+  
+  def reset_game(id) do
+    initial_data = AMath.Game.Intializer.sample()
+      
     with {:ok, new_data, random_items} <- take_rest(initial_data, 8)
     do
       new_data =
@@ -25,10 +25,32 @@ defmodule AMath.Game do
           fn _ -> Enum.map(random_items, &(%{item: &1.item, point: &1.point}))
         end)
       
-      %Item{id: item.id}
+      get_item!(id)
       |> Data.changeset(new_data)
       |> Repo.update()
     end
+  end
+
+  def create_item() do
+    initial_data = AMath.Game.Intializer.sample()
+
+    with {:ok, new_data, random_items} <- take_rest(initial_data, 8)
+    do
+      new_data =
+        update_in(new_data, [:items, :myItems], fn _ ->
+          Enum.map(random_items, &(%{item: &1.item, point: &1.point}))
+        end)
+      
+      %Item{game_id: generate_game_id()}
+      |> Data.changeset(new_data)
+      |> Repo.insert()
+    end
+  end
+  
+  def generate_game_id() do
+    UUID.generate()
+    |> String.split("-")
+    |> List.last
   end
 
   def update_commit(%Item{} = prev_data, attrs) do

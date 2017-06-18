@@ -11,8 +11,8 @@ defmodule AMath.Web.ItemController do
     render(conn, "index.json", items: items)
   end
 
-  def create(conn, %{"item" => item_params}) do
-    with {:ok, %Item{} = item} <- Game.create_item(item_params) do
+  def create(conn, _) do
+    with {:ok, %Item{} = item} <- Game.create_item() do
       conn
       |> put_status(:created)
       |> put_resp_header("location", item_path(conn, :show, item))
@@ -47,6 +47,6 @@ defmodule AMath.Web.ItemController do
     Game.update_exchange(item, item_params)
   end
   defp update_data("reset", item, _item_params) do
-    Game.create_item(item)
+    Game.reset_game(item)
   end
 end

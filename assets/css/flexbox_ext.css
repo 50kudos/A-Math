@@ -1,0 +1,13 @@
+/* Tachyoncss flexbox extention */
+
+.flex-nowrap { -ms-flex-wrap: nowrap; flex-wrap: nowrap; }
+
+@media screen and (min-width: 30em) {
+  .flex-nowrap-ns { -ms-flex-wrap: nowrap !important; flex-wrap: nowrap !important; }
+}
+@media screen and (min-width: 30em) and (max-width: 60em) {
+  .flex-nowrap-m { -ms-flex-wrap: nowrap !important; flex-wrap: nowrap !important; }
+}
+@media screen and (min-width: 60em) {
+  .flex-nowrap-l { -ms-flex-wrap: nowrap !important; flex-wrap: nowrap !important; }
+}

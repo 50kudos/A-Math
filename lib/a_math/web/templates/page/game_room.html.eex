@@ -1,0 +1,4 @@
+<div id="elm-program"
+  class="flex justify-center items-center min-vh-100 bg-dark-gray2"
+  data-game-id="<%= @game_id %>">
+</div>

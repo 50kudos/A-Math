@@ -17,6 +17,8 @@ defmodule AMath.Web.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/game/:id", PageController, :show
+    post "/game", PageController, :create
   end
 
   

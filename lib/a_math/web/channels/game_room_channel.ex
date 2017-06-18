@@ -1,7 +1,9 @@
 defmodule AMath.Web.GameRoomChannel do
   use AMath.Web, :channel
   alias AMath.Web.PlayerPresence
-
+  alias AMath.Game
+  alias AMath.Game.Item
+  import IEx
   # t :: %Phoenix.Socket{
   #   assigns: %{},
   #   channel: atom,
@@ -19,12 +21,10 @@ defmodule AMath.Web.GameRoomChannel do
   #   transport_pid: pid
   # }
 
-  def join("game_room:lobby", payload, socket) do
-    if authorized?(payload) do
-      send(self(), :after_join)
-      
-      response =
-        AMath.Web.ItemView.render("show.json", %{state: AMath.Game.get_item!(10).items})
+  def join("game_room:lobby", %{"game_id" => game_id}, socket) do
+    if authorized?(game_id) do
+      game = Game.get_item!(game_id)
+      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
 
       {:ok, response, assign(socket, :user_id, 13)}
     else
@@ -34,8 +34,39 @@ defmodule AMath.Web.GameRoomChannel do
 
   # Channels can be used in a request/response fashion
   # by sending replies to requests from the client
-  def handle_in("ping", payload, socket) do
-    {:reply, {:ok, payload}, socket}
+  def handle_in("reset_game:" <> game_id, %{"items" => item_params, "patchType" => "commit"}, socket) do
+    item = Game.get_item!(game_id)
+
+    with {:ok, %Item{} = game} <- Game.update_commit(item, item_params) do
+      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
+
+      {:reply, {:ok, response}, socket}
+    else
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+  def handle_in("reset_game:" <> game_id, %{"items" => item_params, "patchType" => "exchange"}, socket) do
+    item = Game.get_item!(game_id)
+
+    with {:ok, %Item{} = game} <- Game.update_exchange(item, item_params) do
+      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
+
+      {:reply, {:ok, response}, socket}
+    else
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+  def handle_in("reset_game:" <> game_id, %{"items" => items, "patchType" => "reset"}, socket) do
+    with {:ok, %Item{} = game} <- Game.reset_game(game_id) do
+      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
+
+      {:reply, {:ok, response}, socket}
+    else
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+  def handle_in(_, _, socket) do
+    {:noreply, socket}
   end
 
   # It is also common to receive messages from the client and

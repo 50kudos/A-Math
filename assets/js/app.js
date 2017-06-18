@@ -22,4 +22,6 @@ import "phoenix_html"
 import Elm from "./elm"
 
 var elmProgram = document.getElementById("elm-program")
-Elm.Main.embed(elmProgram)
+if (elmProgram) {
+  Elm.Main.embed(elmProgram, {gameId: elmProgram.dataset.gameId})
+}
