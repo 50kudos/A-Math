@@ -245,8 +245,8 @@ decoder =
             (JD.succeed init.stagingItems)
 
 
-encoder : String -> Model -> JE.Value
-encoder patchType { stagingItems } =
+encoder : Model -> JE.Value
+encoder { stagingItems } =
     let
         encodeItem : StagingItem CommittedItem -> JE.Value
         encodeItem { item, i, j, point, value } =
@@ -264,5 +264,4 @@ encoder patchType { stagingItems } =
                     [ ( "boardItems", JE.list <| List.map encodeItem stagingItems )
                     ]
               )
-            , ( "patchType", JE.string patchType )
             ]

@@ -54,7 +54,7 @@ exports.config = {
       mainModules: ["Main.elm"],
       outputFolder: "../js",
       outputFile: "elm.js",
-      // makeParameters: ["--debug"]
+      makeParameters: ["--debug"]
     }
   },
 

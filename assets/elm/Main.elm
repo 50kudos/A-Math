@@ -46,6 +46,7 @@ type Msg
     | EnqueueChoices (List ( String, Int, Int ))
     | Push
     | PatchResponse JE.Value
+    | ReceiveNewState JE.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -108,10 +109,10 @@ update msg model =
         ResetGame ->
             let
                 reqBody =
-                    (Board.encoder "reset" model.game.board)
+                    (Board.encoder model.game.board)
 
                 ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+                    Socket.push (patchItems "reset" model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
@@ -142,20 +143,20 @@ update msg model =
         Exchange ->
             let
                 reqBody =
-                    (Board.encoder "exchange" model.game.board)
+                    (Board.encoder model.game.board)
 
                 ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+                    Socket.push (patchItems "exchange" model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
         Push ->
             let
                 reqBody =
-                    (Board.encoder "commit" model.game.board)
+                    (Board.encoder model.game.board)
 
                 ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems model.gameId reqBody) model.phxSocket
+                    Socket.push (patchItems "commit" model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
@@ -173,6 +174,20 @@ update msg model =
                 { model | game = game_ }
                     ! [ Cmd.none ]
 
+        ReceiveNewState response ->
+            case JD.decodeValue Game.decoder response of
+                Ok gameData ->
+                    if
+                        Board.commitUnchanged model.game.board gameData.board
+                            && not (Board.exchanged model.game.board gameData.board)
+                    then
+                        model ! [ Cmd.none ]
+                    else
+                        { model | game = gameData } ! [ Cmd.none ]
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
 
 joinChannel : String -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
 joinChannel gameId =
@@ -182,6 +197,7 @@ joinChannel gameId =
 
         phxSocket =
             Socket.init "ws://localhost:4000/socket/websocket"
+                |> Socket.on ("new_state:" ++ gameId) "game_room:lobby" ReceiveNewState
 
         channel =
             Channel.init "game_room:lobby"
@@ -191,9 +207,9 @@ joinChannel gameId =
         Socket.join channel phxSocket
 
 
-patchItems : String -> JE.Value -> Pusher.Push Msg
-patchItems gameId reqBody =
-    Pusher.init ("reset_game:" ++ gameId) "game_room:lobby"
+patchItems : String -> String -> JE.Value -> Pusher.Push Msg
+patchItems event gameId reqBody =
+    Pusher.init (event ++ ":" ++ gameId) "game_room:lobby"
         |> Pusher.withPayload reqBody
         |> Pusher.onOk PatchResponse
 
