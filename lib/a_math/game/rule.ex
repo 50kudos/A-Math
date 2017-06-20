@@ -1,6 +1,6 @@
 defmodule AMath.Game.Rule do
   alias AMath.Game.Data
-  
+
   def get_linear([%{i: x0,j: y0}|rest] = points) when is_list(points) do
     cond do
       rest == [] ->
@@ -94,8 +94,8 @@ defmodule AMath.Game.Rule do
 
     with true <- Enum.member?(items, "="),
       {:ok, equations} <- IO.inspect(calculable_map(items)),
-      {:ok, ast} <- IO.inspect(validate_syntax(equations)),
       {:ok, _} <- IO.inspect(validate_expr(equations)),
+      {:ok, ast} <- IO.inspect(validate_syntax(equations)),
       :ok <- Macro.validate(ast)
     do
       all_expressions_matched?(ast)
@@ -144,13 +144,18 @@ defmodule AMath.Game.Rule do
   
   defp validate_expr(expressions) do
     expressions = Enum.map(expressions, &to_string/1)
-
+    # Repeating zero is equal to 0 in elixir, but it's not a valid game's rule.
+    # Also, for sake of challenging, only 3 digit can be concatenated.
     validate = fn expr ->
       case expr do
         [_] ->
           true
+        ["0","0"] ->
+          false
         [a,b] ->
           is_digit(a) && is_digit(b)
+        ["0","0","0"] ->
+          false
         [a,b,c] ->
           is_digit(a) && is_digit(b) && is_digit(c)
         _ ->

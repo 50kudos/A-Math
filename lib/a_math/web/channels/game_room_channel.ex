@@ -19,7 +19,7 @@ defmodule AMath.Web.GameRoomChannel do
           {:ok, response, assign(socket, :deck_id, deck.id)}
         
         {:error, _reason} ->
-          {:noreply, socket}
+          {:error, %{reason: "unauthorized"}}
       end
     else
       {:error, %{reason: "unauthorized"}}
