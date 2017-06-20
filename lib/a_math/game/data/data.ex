@@ -1,16 +1,17 @@
 defmodule AMath.Game.Data do
   use Ecto.Schema
-  
+  import IEx
   import Ecto.Changeset, warn: false
   alias AMath.Game.Item
+  alias AMath.Game.Data.Deck
 
   @primary_key false
 
   embedded_schema do
-    embeds_many :myItems, DeckItem, primary_key: false, on_replace: :delete do
-      field :item, :string
-      field :point, :integer
-    end
+    field :turn, :string
+
+    embeds_one :p1_deck, Deck, on_replace: :update
+    embeds_one :p2_deck, Deck, on_replace: :update
     
     embeds_many :restItems, RestItem, primary_key: false, on_replace: :delete do
       field :item, :string
@@ -36,14 +37,10 @@ defmodule AMath.Game.Data do
   def items_changeset(struct, attrs) do
     struct
     |> cast(attrs, [])
-    |> cast_embed(:myItems, with: &myItems_changeset/2)
+    |> cast_embed(:p1_deck, with: &Deck.changeset/2)
+    |> cast_embed(:p2_deck, with: &Deck.changeset/2)
     |> cast_embed(:restItems, with: &restItem_changeset/2)
     |> cast_embed(:boardItems, with: &boardItems_changeset/2)
-  end
-  
-  def myItems_changeset(struct, attrs) do
-    struct
-    |> cast(attrs, [:item, :point])
   end
   
   def restItem_changeset(struct, attrs) do
@@ -57,11 +54,7 @@ defmodule AMath.Game.Data do
   end
 
   def to_map(%__MODULE_{items: struct}) do
-    %{items: struct
-      |> Map.from_struct()
-      |> Map.take([:boardItems, :myItems, :restItems])
-      |> Map.new(fn {k,list} -> {k, Enum.map(list, &Map.from_struct/1)} end)
-    }
+    %{items: Poison.encode!(struct) |> Poison.decode!(keys: :atoms!)}
   end
   
   def board_map(board_items) do

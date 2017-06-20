@@ -2,7 +2,7 @@ defmodule AMath.Web.PageController do
   use AMath.Web, :controller
   alias AMath.Game
   alias AMath.Game.Item
-  
+  import IEx
   action_fallback AMath.Web.FallbackController
 
   def index(conn, _params) do
@@ -10,7 +10,8 @@ defmodule AMath.Web.PageController do
   end
   
   def show(conn, %{"id" => game_id}) do
-    render conn, "game_room.html", game_id: game_id
+    conn
+    |> render("game_room.html", game_id: game_id)
   end
   
   def create(conn, _) do
@@ -19,4 +20,5 @@ defmodule AMath.Web.PageController do
       |> redirect(to: page_path(conn, :show, item.game_id))
     end
   end
+
 end

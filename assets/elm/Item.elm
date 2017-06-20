@@ -1,6 +1,7 @@
 module Item
     exposing
         ( Model
+        , RestItem
         , Msg
         , init
         , update
@@ -10,6 +11,7 @@ module Item
         , viewChoices
         , itemChoices
         , decoder
+        , restItemsDecoder
         , myItems
         , restItems
         )
@@ -23,7 +25,8 @@ import Helper as H
 
 
 type alias Model =
-    { myItems : List DeckItem
+    { deckId : String
+    , myItems : List DeckItem
     , restItems : List RestItem
     }
 
@@ -43,7 +46,14 @@ type Msg
 
 init : Model
 init =
-    Model [] []
+    Model "" [] []
+
+
+restItemsDecoder : JD.Decoder RestItem
+restItemsDecoder =
+    JD.map2 RestItem
+        (JD.field "item" JD.string)
+        (JD.field "ea" JD.int)
 
 
 decoder : JD.Decoder Model
@@ -56,16 +66,11 @@ decoder =
                 (JD.field "point" JD.int)
                 (JD.succeed False)
                 (JD.succeed False)
-
-        restItemsDecoder : JD.Decoder RestItem
-        restItemsDecoder =
-            JD.map2 RestItem
-                (JD.field "item" JD.string)
-                (JD.field "ea" JD.int)
     in
-        JD.map2 Model
-            (JD.at [ "myItems" ] <| JD.list myItemsDecoder)
-            (JD.at [ "restItems" ] <| JD.list restItemsDecoder)
+        JD.map3 Model
+            (JD.field "deckId" JD.string)
+            (JD.field "myItems" <| JD.list myItemsDecoder)
+            (JD.field "restItems" <| JD.list restItemsDecoder)
 
 
 update : Msg -> Model -> Model

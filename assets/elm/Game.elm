@@ -123,9 +123,22 @@ viewChoiceFor position model =
             text ""
 
 
+type alias CommonState a =
+    { restItems : List a
+    , board : Board.Model
+    }
+
+
 decoder : JD.Decoder Model
 decoder =
     JD.map3 Model
         (Item.decoder)
         (Board.decoder)
         (JD.succeed [])
+
+
+commonStateDecoder : JD.Decoder (CommonState Item.RestItem)
+commonStateDecoder =
+    JD.map2 CommonState
+        (JD.field "restItems" <| JD.list Item.restItemsDecoder)
+        (Board.decoder)

@@ -23,5 +23,7 @@ import Elm from "./elm"
 
 var elmProgram = document.getElementById("elm-program")
 if (elmProgram) {
-  Elm.Main.embed(elmProgram, {gameId: elmProgram.dataset.gameId})
+  Elm.Main.embed(elmProgram, {
+    gameId: elmProgram.dataset.gameId
+  })
 }

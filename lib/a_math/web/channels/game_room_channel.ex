@@ -3,30 +3,24 @@ defmodule AMath.Web.GameRoomChannel do
   alias AMath.Web.PlayerPresence
   alias AMath.Game
   alias AMath.Game.Item
-  
-  # t :: %Phoenix.Socket{
-  #   assigns: %{},
-  #   channel: atom,
-  #   channel_pid: pid,
-  #   endpoint: atom,
-  #   handler: atom,
-  #   id: nil,
-  #   joined: boolean,
-  #   pubsub_server: atom,
-  #   ref: term,
-  #   serializer: atom,
-  #   topic: String.t,
-  #   transport: atom,
-  #   transport_name: atom,
-  #   transport_pid: pid
-  # }
+  alias AMath.Game.Data
+  alias AMath.Web.ItemView
+  import IEx
 
-  def join("game_room:lobby", %{"game_id" => game_id}, socket) do
+  def join("game_room:" <> game_id, _payload, socket) do
     if authorized?(game_id) do
       game = Game.get_item!(game_id)
-      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
-
-      {:ok, response, socket}
+      items = game.items
+      
+      case get_deck_id_by(socket, items) do
+        {:ok, deck} ->
+          response = ItemView.render("show.json", %{state: items, deck: deck})
+          send(self(), :after_join)
+          {:ok, response, assign(socket, :deck_id, deck.id)}
+        
+        {:error, _reason} ->
+          {:noreply, socket}
+      end
     else
       {:error, %{reason: "unauthorized"}}
     end
@@ -34,37 +28,54 @@ defmodule AMath.Web.GameRoomChannel do
 
   # Channels can be used in a request/response fashion
   # by sending replies to requests from the client
-  def handle_in("commit:" <> game_id, %{"items" => item_params}, socket) do
-    item = Game.get_item!(game_id)
+  def handle_in("commit:" <> deck_id, %{"items" => item_params}, socket) do
+    "game_room:" <> game_id = socket.topic
+    game = Game.get_item!(game_id)
+    deck = Game.get_deck(Data.to_map(game), deck_id)
 
-    with {:ok, %Item{} = game} <- Game.update_commit(item, item_params) do
-      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
-      broadcast socket, "new_state:" <> game_id, response
+    with {:ok, %Item{} = new_game} <- Game.update_commit(game, item_params, deck.key) do
+      new_deck = Game.get_deck(Data.to_map(new_game), deck_id)
+      response = ItemView.render("show.json", %{state: new_game.items, deck: new_deck})
+      push socket, "new_state", response
 
-      {:reply, :ok, socket}
-    else
-      {:error, _} ->
-        {:noreply, socket}
-    end
-  end
-  def handle_in("exchange:" <> game_id, %{"items" => item_params}, socket) do
-    item = Game.get_item!(game_id)
+      response = ItemView.render("common_show.json", %{state: new_game.items})
+      broadcast_from socket, "common_state", response
 
-    with {:ok, %Item{} = game} <- Game.update_exchange(item, item_params) do
-      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
-      broadcast socket, "new_state:" <> game_id, response
-      
-      {:reply, :ok, socket}
+      {:noreply, socket}
     else
       {:error, _} -> {:noreply, socket}
     end
   end
-  def handle_in("reset:" <> game_id, %{"items" => _items}, socket) do
-    with {:ok, %Item{} = game} <- Game.reset_game(game_id) do
-      response = AMath.Web.ItemView.render("show.json", %{state: game.items})
-      broadcast socket, "new_state:" <> game_id, response
+  def handle_in("exchange:" <> deck_id, %{"items" => item_params}, socket) do
+    "game_room:" <> game_id = socket.topic
+    game = Game.get_item!(game_id)
+    deck = Game.get_deck(Data.to_map(game), deck_id)
 
-      {:reply, :ok, socket}
+    with {:ok, %Item{} = new_game} <- Game.update_exchange(game, item_params, deck.key) do
+      new_deck = Game.get_deck(Data.to_map(new_game), deck_id)
+      response = ItemView.render("show.json", %{state: new_game.items, deck: new_deck})
+      push socket, "new_state", response
+      
+      response = ItemView.render("common_show.json", %{state: new_game.items})
+      broadcast_from socket, "common_state", response
+
+      {:noreply, socket}
+    else
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+  def handle_in("reset:" <> deck_id, _payload, socket) do
+    "game_room:" <> game_id = socket.topic
+
+    with {:ok, %Item{} = new_game} <- Game.reset_game(game_id) do
+      new_deck = Game.get_deck(Data.to_map(new_game), deck_id)
+      response = ItemView.render("show.json", %{state: new_game.items, deck: new_deck})
+      push socket, "new_state", response
+
+      response = ItemView.render("common_show.json", %{state: new_game.items})
+      broadcast_from socket, "common_state", response
+
+      {:noreply, socket}
     else
       {:error, _} -> {:noreply, socket}
     end
@@ -82,11 +93,29 @@ defmodule AMath.Web.GameRoomChannel do
   end
   
   def handle_info(:after_join, socket) do
-    push socket, "presence_state", PlayerPresence.list(socket)
-    {:ok, _} = PlayerPresence.track(socket, socket.assigns.user_id, %{
+    {:ok, _} = PlayerPresence.track(socket, socket.assigns.deck_id, %{
       online_at: inspect(System.system_time(:seconds))
     })
+
+    broadcast socket, "presence_state", PlayerPresence.list(socket)
     {:noreply, socket}
+  end
+
+  defp get_deck_id_by(socket, items) do
+    case Map.keys PlayerPresence.list(socket) do
+      [] ->
+        {:ok, items.p1_deck}
+
+      [deck] ->
+        if deck == items.p1_deck.id do
+          {:ok, items.p2_deck}
+        else
+          {:ok, items.p1_deck}
+        end
+
+      _ ->
+        {:error, "Game room is full."}
+    end
   end
 
   # Add authorization logic here as required.

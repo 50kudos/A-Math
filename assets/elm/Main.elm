@@ -28,9 +28,9 @@ main =
 
 
 type alias Model =
-    { game : Game.Model
+    { gameId : String
+    , game : Game.Model
     , phxSocket : Socket.Socket Msg
-    , gameId : String
     }
 
 
@@ -39,7 +39,7 @@ type Msg
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
     | PhoenixMsg (Socket.Msg Msg)
-    | ShowJoinedMessage JE.Value
+    | JoinedResponse JE.Value
     | ResetGame
     | Exchange
     | BatchRecall
@@ -47,15 +47,19 @@ type Msg
     | Push
     | PatchResponse JE.Value
     | ReceiveNewState JE.Value
+    | ReceiveNewCommonState JE.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         ( phxSocket, phxCmd ) =
-            joinChannel flags.gameId
+            joinChannel flags
     in
-        { game = Game.init, phxSocket = phxSocket, gameId = flags.gameId }
+        { gameId = flags.gameId
+        , game = Game.init
+        , phxSocket = phxSocket
+        }
             ! [ Cmd.map PhoenixMsg phxCmd
               ]
 
@@ -98,7 +102,7 @@ update msg model =
                 , Cmd.map PhoenixMsg phxCmd
                 )
 
-        ShowJoinedMessage response ->
+        JoinedResponse response ->
             case JD.decodeValue Game.decoder response of
                 Ok game ->
                     { model | game = game } ! [ Cmd.none ]
@@ -145,8 +149,11 @@ update msg model =
                 reqBody =
                     (Board.encoder model.game.board)
 
+                exchangeEvent =
+                    "exchange:" ++ model.game.items.deckId
+
                 ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems "exchange" model.gameId reqBody) model.phxSocket
+                    Socket.push (patchItems exchangeEvent model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
@@ -155,8 +162,11 @@ update msg model =
                 reqBody =
                     (Board.encoder model.game.board)
 
+                commitEvent =
+                    "commit:" ++ model.game.items.deckId
+
                 ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems "commit" model.gameId reqBody) model.phxSocket
+                    Socket.push (patchItems commitEvent model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
@@ -188,20 +198,48 @@ update msg model =
                 Err error ->
                     Debug.log error ( model, Cmd.none )
 
+        ReceiveNewCommonState response ->
+            case JD.decodeValue Game.commonStateDecoder response of
+                Ok gameData ->
+                    let
+                        game =
+                            model.game
 
-joinChannel : String -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
-joinChannel gameId =
+                        items =
+                            model.game.items
+
+                        new_items =
+                            { items | restItems = gameData.restItems }
+
+                        new_game =
+                            { game | board = gameData.board, items = new_items }
+                    in
+                        if
+                            Board.commitUnchanged model.game.board gameData.board
+                                && not (Board.exchanged model.game.board gameData.board)
+                        then
+                            model ! [ Cmd.none ]
+                        else
+                            { model | game = new_game } ! [ Cmd.none ]
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
+
+joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
+joinChannel { gameId } =
     let
         joinPayload =
             JE.object [ ( "game_id", JE.string gameId ) ]
 
         phxSocket =
             Socket.init "ws://localhost:4000/socket/websocket"
-                |> Socket.on ("new_state:" ++ gameId) "game_room:lobby" ReceiveNewState
+                |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
+                |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
 
         channel =
-            Channel.init "game_room:lobby"
-                |> Channel.onJoin ShowJoinedMessage
+            Channel.init ("game_room:" ++ gameId)
+                |> Channel.onJoin JoinedResponse
                 |> Channel.withPayload joinPayload
     in
         Socket.join channel phxSocket
@@ -209,7 +247,7 @@ joinChannel gameId =
 
 patchItems : String -> String -> JE.Value -> Pusher.Push Msg
 patchItems event gameId reqBody =
-    Pusher.init (event ++ ":" ++ gameId) "game_room:lobby"
+    Pusher.init event ("game_room:" ++ gameId)
         |> Pusher.withPayload reqBody
         |> Pusher.onOk PatchResponse
 
@@ -238,7 +276,7 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "flex flex-wrap flex-nowrap-l justify-center items-center" ]
+    div [ class "flex flex-wrap flex-nowrap-l justify-center" ]
         [ Item.restItems model.game.items
         , section [ class "w-40-l mh4-l mb3-l" ]
             [ div [ class "relative" ]
@@ -249,14 +287,14 @@ view model =
                 [ Item.myItems model.game.items ItemMsg
                 ]
             ]
-        , section [ class "flex justify-between flex-auto flex-none-l db-l mt3 mt0-l ml2-l" ]
+        , section [ class "flex justify-between flex-auto flex-none-l self-end db-l mt3 mt0-l ml2-l mb5-l pb3-l" ]
             [ a
                 [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
                 , onClick Exchange
                 ]
                 [ text "Exchange" ]
             , a
-                [ class "f6 link db ba pv2 pa4-l near-white tc pointer flex-auto bg-dark-blue hover-bg-blue mv5-l"
+                [ class "f6 link db ba pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
                 , onClick (beforeSubmit model.game)
                 ]
                 [ text "SUBMIT" ]

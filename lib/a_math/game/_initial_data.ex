@@ -3,28 +3,20 @@ defmodule AMath.Game.Intializer do
     %{
       items: %{
         boardItems: [],
-        myItems: [
-          %{item: "10", point: 3},
-          %{item: "-", point: 2},
-          %{item: "=", point: 1},
-          %{item: "=", point: 1},
-          %{item: "1", point: 1},
-          %{item: "2", point: 1},
-          %{item: "0", point: 1},
-          %{item: "9", point: 2}
-        ],
+        p1_deck: %{},
+        p2_deck: %{},
         restItems: [
-          %{item: "0", ea: 4, point: 1},
-          %{item: "1", ea: 5, point: 1},
-          %{item: "2", ea: 5, point: 1},
+          %{item: "0", ea: 5, point: 1},
+          %{item: "1", ea: 6, point: 1},
+          %{item: "2", ea: 6, point: 1},
           %{item: "3", ea: 5, point: 1},
           %{item: "4", ea: 5, point: 2},
           %{item: "5", ea: 4, point: 2},
           %{item: "6", ea: 4, point: 2},
           %{item: "7", ea: 4, point: 2},
           %{item: "8", ea: 4, point: 2},
-          %{item: "9", ea: 3, point: 2},
-          %{item: "10", ea: 1, point: 3},
+          %{item: "9", ea: 4, point: 2},
+          %{item: "10", ea: 2, point: 3},
           %{item: "11", ea: 1, point: 4},
           %{item: "12", ea: 2, point: 3},
           %{item: "13", ea: 1, point: 6},
@@ -36,12 +28,12 @@ defmodule AMath.Game.Intializer do
           %{item: "19", ea: 1, point: 7},
           %{item: "20", ea: 1, point: 5},
           %{item: "+", ea: 4, point: 2},
-          %{item: "-", ea: 3, point: 2},
+          %{item: "-", ea: 4, point: 2},
           %{item: "+/-", ea: 5, point: 1},
           %{item: "x", ea: 4, point: 2},
           %{item: "÷", ea: 4, point: 2},
           %{item: "x/÷", ea: 4, point: 1},
-          %{item: "=", ea: 9, point: 1},
+          %{item: "=", ea: 11, point: 1},
           %{item: "blank", ea: 4, point: 0}
         ]
       }

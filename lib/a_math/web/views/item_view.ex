@@ -1,15 +1,23 @@
 defmodule AMath.Web.ItemView do
   use AMath.Web, :view
   alias AMath.Web.ItemView
-
+  import IEx
   def render("index.json", %{items: items}) do
     %{data: render_many(items, ItemView, "item.json")}
   end
 
-  def render("show.json", %{state: data}) do
+  def render("show.json", %{state: data, deck: deck}) do
+    %{
+      deckId: deck.id,
+      boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
+      myItems: render_many(deck.items, ItemView, "my_item.json"),
+      restItems: render_many(data.restItems, ItemView, "item.json")
+    }
+  end
+
+  def render("common_show.json", %{state: data}) do
     %{
       boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
-      myItems: render_many(data.myItems, ItemView, "my_item.json"),
       restItems: render_many(data.restItems, ItemView, "item.json")
     }
   end
@@ -25,4 +33,5 @@ defmodule AMath.Web.ItemView do
   def render("board_item.json", %{item: item}) do
     %{item: item.item, i: item.i, j: item.j, point: item.point, value: item.value}
   end
+
 end
