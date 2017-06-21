@@ -6,8 +6,10 @@ import Html.Attributes exposing (class)
 import Phoenix.Socket as Socket
 import Phoenix.Channel as Channel
 import Phoenix.Push as Pusher
+import Phoenix.Presence as Presence
 import Json.Encode as JE
 import Json.Decode as JD
+import Dict
 import Game
 import Board
 import Item
@@ -31,6 +33,7 @@ type alias Model =
     { gameId : String
     , game : Game.Model
     , phxSocket : Socket.Socket Msg
+    , phxPresences : Presence.PresenceState DeckPresence
     }
 
 
@@ -48,6 +51,8 @@ type Msg
     | PatchResponse JE.Value
     | ReceiveNewState JE.Value
     | ReceiveNewCommonState JE.Value
+    | ReceivePresence JE.Value
+    | ReceivePresenceDiff JE.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -59,6 +64,7 @@ init flags =
         { gameId = flags.gameId
         , game = Game.init
         , phxSocket = phxSocket
+        , phxPresences = Dict.empty
         }
             ! [ Cmd.map PhoenixMsg phxCmd
               ]
@@ -225,6 +231,43 @@ update msg model =
                 Err error ->
                     Debug.log error ( model, Cmd.none )
 
+        ReceivePresence response ->
+            case JD.decodeValue (Presence.presenceStateDecoder deckPresenceDecoder) response of
+                Ok presenceState ->
+                    let
+                        newPresenceState =
+                            model.phxPresences |> Presence.syncState presenceState
+                    in
+                        ( { model | phxPresences = newPresenceState }, Cmd.none )
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
+        ReceivePresenceDiff response ->
+            case JD.decodeValue (Presence.presenceDiffDecoder deckPresenceDecoder) response of
+                Ok presenceState ->
+                    let
+                        newPresenceState =
+                            model.phxPresences |> Presence.syncDiff presenceState
+                    in
+                        ( { model | phxPresences = newPresenceState }, Cmd.none )
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
+
+type alias DeckPresence =
+    { onlineAt : String
+    , myTurn : Bool
+    }
+
+
+deckPresenceDecoder : JD.Decoder DeckPresence
+deckPresenceDecoder =
+    JD.map2 DeckPresence
+        (JD.field "online_at" JD.string)
+        (JD.field "my_turn" JD.bool)
+
 
 joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
 joinChannel { gameId } =
@@ -234,8 +277,11 @@ joinChannel { gameId } =
 
         phxSocket =
             Socket.init "ws://localhost:4000/socket/websocket"
+                |> Socket.withDebug
                 |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
                 |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
+                |> Socket.on "presence_state" ("game_room:" ++ gameId) ReceivePresence
+                |> Socket.on "presence_diff" ("game_room:" ++ gameId) ReceivePresenceDiff
 
         channel =
             Channel.init ("game_room:" ++ gameId)
@@ -309,4 +355,5 @@ view model =
                 ]
                 [ text "Recall" ]
             ]
+        , section [] []
         ]

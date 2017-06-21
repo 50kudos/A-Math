@@ -5,16 +5,19 @@ defmodule AMath.Game.Rule do
     cond do
       rest == [] ->
         {:point, x0, y0}
+
       Enum.all?(rest, fn %{i: xn} -> xn == x0 end) ->
         {%{j: min_y}, %{j: max_y}} =
           points |> Enum.min_max_by(fn %{j: y} -> y end)
 
         {:constant_x, x0, min_y, max_y}
+
       Enum.all?(rest, fn %{j: yn} -> yn == y0 end) ->
         {%{i: min_x}, %{i: max_x}} =
           points |> Enum.min_max_by(fn %{i: x} -> x end)
 
         {:constant_y, y0, min_x, max_x}
+
       true ->
         :nothing
     end
@@ -26,6 +29,7 @@ defmodule AMath.Game.Rule do
      case Enum.count(items) do
        0 ->
          false
+
        count ->
          [first|rest] = items
            |> Enum.map(every_fn)
@@ -93,9 +97,9 @@ defmodule AMath.Game.Rule do
     items = Enum.map(items, &(&1.value))
 
     with true <- Enum.member?(items, "="),
-      {:ok, equations} <- IO.inspect(calculable_map(items)),
-      {:ok, _} <- IO.inspect(validate_expr(equations)),
-      {:ok, ast} <- IO.inspect(validate_syntax(equations)),
+      {:ok, equations} <- calculable_map(items) |> IO.inspect,
+      {:ok, _exprs} <- validate_expr(equations) |> IO.inspect,
+      {:ok, ast} <- validate_syntax(equations) |> IO.inspect,
       :ok <- Macro.validate(ast)
     do
       all_expressions_matched?(ast)
@@ -106,12 +110,13 @@ defmodule AMath.Game.Rule do
 
   defp all_expressions_matched?(ast) do
     try do
-      case IO.inspect(Code.eval_quoted(ast)) do
+      case Code.eval_quoted(ast) |> IO.inspect do
         {:error, _} -> false
         _ -> true
       end
     rescue
       MatchError -> false
+      ArithmeticError -> false
     end
   end
   

@@ -8,7 +8,7 @@ defmodule AMath.Game.Data do
   @primary_key false
 
   embedded_schema do
-    field :turn, :string
+    field :turn_queue, {:array, :string}, default: []
 
     embeds_one :p1_deck, Deck, on_replace: :update
     embeds_one :p2_deck, Deck, on_replace: :update
@@ -36,7 +36,7 @@ defmodule AMath.Game.Data do
   
   def items_changeset(struct, attrs) do
     struct
-    |> cast(attrs, [])
+    |> cast(attrs, [:turn_queue])
     |> cast_embed(:p1_deck, with: &Deck.changeset/2)
     |> cast_embed(:p2_deck, with: &Deck.changeset/2)
     |> cast_embed(:restItems, with: &restItem_changeset/2)

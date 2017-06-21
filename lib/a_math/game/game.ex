@@ -14,8 +14,8 @@ defmodule AMath.Game do
       {:ok, game, p2_items} <- take_rest(initial_data, 8)
     do
       game = game
-      |> put_deck(p1_items, :p1_deck)
-      |> put_deck(p2_items, :p2_deck)
+      |> put_deck(:p1_deck, p1_items)
+      |> put_deck(:p2_deck, p2_items)
 
       %Item{game_id: generate_game_id()}
       |> Data.changeset(game)
@@ -23,7 +23,7 @@ defmodule AMath.Game do
     end
   end
   
-  def put_deck(game, items, deck_key) do
+  def put_deck(game, deck_key, items) do
     deck_items = %{items: Enum.map(items, &(Map.take &1, [:item, :point]))}
     %{game | items: Map.put(game.items, deck_key, deck_items)}
   end
@@ -55,6 +55,16 @@ defmodule AMath.Game do
       |> Data.changeset(new_data)
       |> Repo.update()
     end
+  end
+  
+  def enqueue_deck(game, deck_id) do
+    new_game = game
+    |> Data.to_map()
+    |> update_in([:items, :turn_queue], fn queue -> Enum.uniq [deck_id | queue] end)
+    
+    game
+    |> Data.changeset(new_game)
+    |> Repo.update()
   end
   
   def reset_game(id) do
