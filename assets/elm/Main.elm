@@ -1,8 +1,8 @@
 module Main exposing (main)
 
-import Html exposing (Html, map, div, a, text, section)
+import Html exposing (Html, map, div, a, text, section, input, label, small)
 import Html.Events exposing (onClick)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, defaultValue, type_, autofocus, for, id, readonly)
 import Phoenix.Socket as Socket
 import Phoenix.Channel as Channel
 import Phoenix.Push as Pusher
@@ -32,6 +32,7 @@ main =
 type alias Model =
     { gameId : String
     , game : Game.Model
+    , players : List Player
     , phxSocket : Socket.Socket Msg
     , phxPresences : Presence.PresenceState DeckPresence
     }
@@ -63,6 +64,7 @@ init flags =
     in
         { gameId = flags.gameId
         , game = Game.init
+        , players = []
         , phxSocket = phxSocket
         , phxPresences = Dict.empty
         }
@@ -249,8 +251,11 @@ update msg model =
                     let
                         newPresenceState =
                             model.phxPresences |> Presence.syncDiff presenceState
+
+                        players =
+                            Dict.keys newPresenceState |> List.map (\k -> Player k 0)
                     in
-                        ( { model | phxPresences = newPresenceState }, Cmd.none )
+                        ( { model | phxPresences = newPresenceState, players = players }, Cmd.none )
 
                 Err error ->
                     Debug.log error ( model, Cmd.none )
@@ -259,6 +264,12 @@ update msg model =
 type alias DeckPresence =
     { onlineAt : String
     , myTurn : Bool
+    }
+
+
+type alias Player =
+    { name : String
+    , point : Int
     }
 
 
@@ -320,10 +331,38 @@ subscriptions model =
     Socket.listen model.phxSocket PhoenixMsg
 
 
+viewCopyUrl : Html msg
+viewCopyUrl =
+    div [ class "fixed z-9999 h-100 w-100 flex items-center justify-center light-gray bg-black-70" ]
+        [ div [ class "w-90 w-50-l" ]
+            [ label [ for "game_url", class "f4 db mb2" ] [ text "Game room url" ]
+            , input
+                [ type_ "url"
+                , readonly True
+                , autofocus True
+                , id "game_url"
+                , class "pointer input-reset ba b--black-20 pa2 mb2 db w-100"
+                , defaultValue "http://localhost:4000/game/axY2XVf3v1ONGHz8ZfvN25kRJ9qEeog3"
+                ]
+                []
+            , small [ class "f6 white-80 db mb2" ] [ text "To play the game, copy and send the url to your friend!" ]
+            ]
+        ]
+
+
+waiting : a -> List Player -> Maybe a
+waiting a players =
+    if (List.length players) < 2 then
+        Just a
+    else
+        Nothing
+
+
 view : Model -> Html Msg
 view model =
-    div [ class "flex flex-wrap flex-nowrap-l justify-center" ]
-        [ Item.restItems model.game.items
+    div [ class "flex flex-wrap flex-nowrap-l justify-center items-center items-stretch-m" ]
+        [ waiting viewCopyUrl model.players |> Maybe.withDefault (text "")
+        , Item.restItems model.game.items
         , section [ class "w-40-l mh4-l mb3-l" ]
             [ div [ class "relative" ]
                 [ Board.view (List.head model.game.choices) model.game.board BoardMsg
@@ -355,5 +394,4 @@ view model =
                 ]
                 [ text "Recall" ]
             ]
-        , section [] []
         ]

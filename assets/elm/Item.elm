@@ -186,7 +186,7 @@ restItems { restItems } =
                 , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
                 ]
     in
-        section [ class "dn flex-ns flex-wrap items-end-l flex-column-l mw5-l mb4 ph2 ph3-l w-100 vh-50-l" ]
+        section [ class "dn flex-ns flex-wrap items-end-l flex-column-l self-start-l mw5-l mb4 ph2 ph3-l w-100 vh-50-l" ]
             (List.map tile restItems)
 
 
