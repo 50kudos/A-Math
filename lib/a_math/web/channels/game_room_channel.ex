@@ -10,12 +10,12 @@ defmodule AMath.Web.GameRoomChannel do
   def join("game_room:" <> game_id, _payload, socket) do
     with true <- authorized?(game_id),
       %Item{} = game <- Game.get_item!(game_id),
-      {:ok, deck} <- get_available_deck(socket, game.items),
-      {:ok, %Item{} = game} <- Game.enqueue_deck(game, deck.id)
+      {:ok, deck} <- get_available_deck(socket, game.items)
     do
-      send(self(), {:after_join, game.items.turn_queue})
+      send(self(), :after_join)
+
       {:ok,
-        ItemView.render("show.json", %{state: game.items, deck: deck}),
+        ItemView.render("join.json", %{state: game.items, deck: deck}),
         assign(socket, :deck_id, deck.id)}
     else
       _ -> {:error, %{reason: "unauthorized"}}
@@ -30,18 +30,25 @@ defmodule AMath.Web.GameRoomChannel do
   end
   def handle_in(_, _, socket), do: {:noreply, socket}
   
-  intercept ["presence_diff"]
+  intercept ["presence_diff", "common_state"]
   def handle_out("presence_diff", msg, socket) do
-    push socket, "presence_diff", msg
+    sync_deck_presence(socket)
+    |> push("presence_diff", msg)
+    
+    {:noreply, socket}
+  end
+  def handle_out("common_state", resp, socket) do
+    turn_id = List.first(resp.myTurn)
+    push socket, "common_state", %{resp | myTurn: turn_id == socket.assigns.deck_id }
+
     {:noreply, socket}
   end
   
-  def handle_info({:after_join, turn}, socket) do
+  def handle_info(:after_join, socket) do
     push socket, "presence_state", PlayerPresence.list(socket)
 
     {:ok, _} = PlayerPresence.track(socket, socket.assigns.deck_id, %{
-      online_at: inspect(System.system_time(:seconds)),
-      my_turn: socket.assigns.deck_id == List.last(turn)
+      online_at: inspect(System.system_time(:seconds))
     })
 
     {:noreply, socket}
@@ -66,16 +73,17 @@ defmodule AMath.Web.GameRoomChannel do
 
   def update_game(socket, item_params, deck_id, func) when is_function(func, 3) do
     game = get_game(socket)
-    deck = get_deck(game, deck_id)
+    deck = get_deck(game, verify_deck(deck_id))
     
     with {:ok, %Item{} = new_game} <- func.(game, item_params, deck.key),
-      %{id: _, key: _, items: _} = new_deck <- get_deck(new_game, deck_id)
+      {:ok, new_game} <- Game.rotate_turn(new_game),
+      %{id: _, key: _, items: _} = new_deck <- get_deck(new_game, deck.id)
     do
-      socket
-      |> push_new_state(new_deck, new_game.items)
-      |> broadcast_common_state(new_game.items)
-
-      {:noreply, socket}
+      {:noreply,
+        socket
+        |> push_new_state(new_deck, new_game.items)
+        |> broadcast_common_state(new_game.items)
+      }
     else
       {:error, _} -> {:noreply, socket}
     end
@@ -93,8 +101,39 @@ defmodule AMath.Web.GameRoomChannel do
   
   defp broadcast_common_state(socket, items) do
     common_state = ItemView.render("common_show.json", %{state: items})
-    broadcast_from(socket, "common_state", common_state)
+    broadcast(socket, "common_state", common_state)
     socket
+  end
+  
+  defp verify_deck(deck_id) do
+    {:ok, id} = Phoenix.Token.verify(AMath.Web.Endpoint, "The north remembers", deck_id)
+    id
+  end
+  
+  defp sync_deck_presence(socket) do
+    game = get_game(socket)
+
+    case game.items.turn_queue do
+      [_p1,_p2] ->
+        socket
+      _ ->
+        game
+        |> Game.enqueue_deck(fn _ -> sorted_presences(socket) end)
+        socket
+    end
+  end
+  
+  def sorted_presences(socket) do
+    PlayerPresence.list(socket)
+      |> Enum.sort(fn ({_k0, %{metas: list0}},{_k1, %{metas: list1}}) ->
+          (Enum.sort(Enum.map list0, &(&1.online_at)) |> List.first()) <
+          (Enum.sort(Enum.map list1, &(&1.online_at)) |> List.first())
+        end)
+      |> Enum.map(fn {k,_} -> k end)
+  end
+  
+  defp get_tern(game) do
+    game.items.turn_queue |> List.first()
   end
 
   defp authorized?(_payload) do

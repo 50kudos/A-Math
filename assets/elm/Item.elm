@@ -11,7 +11,6 @@ module Item
         , viewChoices
         , itemChoices
         , decoder
-        , restItemsDecoder
         , myItems
         , restItems
         )
@@ -56,21 +55,21 @@ restItemsDecoder =
         (JD.field "ea" JD.int)
 
 
+myItemsDecoder : JD.Decoder DeckItem
+myItemsDecoder =
+    JD.map4 DeckItem
+        (JD.field "item" JD.string)
+        (JD.field "point" JD.int)
+        (JD.succeed False)
+        (JD.succeed False)
+
+
 decoder : JD.Decoder Model
 decoder =
-    let
-        myItemsDecoder : JD.Decoder DeckItem
-        myItemsDecoder =
-            JD.map4 DeckItem
-                (JD.field "item" JD.string)
-                (JD.field "point" JD.int)
-                (JD.succeed False)
-                (JD.succeed False)
-    in
-        JD.map3 Model
-            (JD.field "deckId" JD.string)
-            (JD.field "myItems" <| JD.list myItemsDecoder)
-            (JD.field "restItems" <| JD.list restItemsDecoder)
+    JD.map3 Model
+        (JD.field "deckId" JD.string)
+        (JD.field "myItems" <| JD.list myItemsDecoder)
+        (JD.field "restItems" <| JD.list restItemsDecoder)
 
 
 update : Msg -> Model -> Model

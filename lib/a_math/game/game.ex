@@ -57,14 +57,18 @@ defmodule AMath.Game do
     end
   end
   
-  def enqueue_deck(game, deck_id) do
+  def enqueue_deck(game, fun \\ fn x -> x end) do
     new_game = game
     |> Data.to_map()
-    |> update_in([:items, :turn_queue], fn queue -> Enum.uniq [deck_id | queue] end)
-    
+    |> update_in([:items, :turn_queue], fun)
+
     game
     |> Data.changeset(new_game)
     |> Repo.update()
+  end
+  
+  def rotate_turn(game) do
+    enqueue_deck(game, fn [first|rest] -> rest ++ [first] end)
   end
   
   def reset_game(id) do
@@ -260,4 +264,8 @@ defmodule AMath.Game do
       Map.get(game.items, :p2_deck) |> Map.put(:key, :p2_deck)
     end
   end
+  
+  def handle_turn([], _deck_id), do: false
+  def handle_turn([a], _deck_id), do: false
+  def handle_turn([first|_], deck_id), do: first == deck_id
 end

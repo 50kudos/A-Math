@@ -1,6 +1,9 @@
 defmodule AMath.Web.ItemView do
   use AMath.Web, :view
   alias AMath.Web.ItemView
+  alias AMath.Web.Endpoint
+  alias AMath.Game
+
   import IEx
   def render("index.json", %{items: items}) do
     %{data: render_many(items, ItemView, "item.json")}
@@ -8,8 +11,9 @@ defmodule AMath.Web.ItemView do
 
   def render("show.json", %{state: data, deck: deck}) do
     %{
-      deckId: deck.id,
-      boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
+      deckId: Phoenix.Token.sign(Endpoint, "The north remembers", deck.id),
+      # myTurn: List.first(data.turn_queue) == deck.id,
+      # boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
       myItems: render_many(deck.items, ItemView, "my_item.json"),
       restItems: render_many(data.restItems, ItemView, "item.json")
     }
@@ -17,9 +21,17 @@ defmodule AMath.Web.ItemView do
 
   def render("common_show.json", %{state: data}) do
     %{
-      boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
-      restItems: render_many(data.restItems, ItemView, "item.json")
+      myTurn: data.turn_queue,
+      boardItems: render_many(data.boardItems, ItemView, "board_item.json")
     }
+  end
+  
+  def render("join.json", %{state: data, deck: deck}) do
+    render("show.json", %{state: data, deck: deck})
+    |> Map.merge(%{
+        myTurn: Game.handle_turn(data.turn_queue, deck.id),
+        boardItems: render_many(data.boardItems, ItemView, "board_item.json")
+      })
   end
 
   def render("item.json", %{item: item}) do

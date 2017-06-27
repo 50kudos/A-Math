@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (Html, map, div, a, text, section, input, label, small)
+import Html exposing (Html, map, div, a, text, section, input, label, small, span)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class, defaultValue, type_, autofocus, for, id, readonly)
 import Phoenix.Socket as Socket
@@ -74,6 +74,40 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    if model.game.myTurn then
+        normalUpdate msg model
+    else
+        case msg of
+            JoinedResponse a ->
+                normalUpdate msg model
+
+            PhoenixMsg a ->
+                normalUpdate msg model
+
+            PatchResponse a ->
+                normalUpdate msg model
+
+            ReceiveNewState a ->
+                normalUpdate msg model
+
+            ReceiveNewCommonState a ->
+                normalUpdate msg model
+
+            ReceivePresence a ->
+                normalUpdate msg model
+
+            ReceivePresenceDiff a ->
+                normalUpdate msg model
+
+            ItemMsg a ->
+                normalUpdate msg model
+
+            _ ->
+                ( model, Cmd.none )
+
+
+normalUpdate : Msg -> Model -> ( Model, Cmd Msg )
+normalUpdate msg model =
     case msg of
         GameMsg msg ->
             let
@@ -193,15 +227,16 @@ update msg model =
                     ! [ Cmd.none ]
 
         ReceiveNewState response ->
-            case JD.decodeValue Game.decoder response of
+            case JD.decodeValue Item.decoder response of
                 Ok gameData ->
-                    if
-                        Board.commitUnchanged model.game.board gameData.board
-                            && not (Board.exchanged model.game.board gameData.board)
-                    then
-                        model ! [ Cmd.none ]
-                    else
-                        { model | game = gameData } ! [ Cmd.none ]
+                    let
+                        game =
+                            model.game
+
+                        newGame =
+                            { game | items = gameData }
+                    in
+                        { model | game = newGame } ! [ Cmd.none ]
 
                 Err error ->
                     Debug.log error ( model, Cmd.none )
@@ -216,11 +251,8 @@ update msg model =
                         items =
                             model.game.items
 
-                        new_items =
-                            { items | restItems = gameData.restItems }
-
                         new_game =
-                            { game | board = gameData.board, items = new_items }
+                            { game | board = gameData.board, myTurn = gameData.myTurn }
                     in
                         if
                             Board.commitUnchanged model.game.board gameData.board
@@ -263,7 +295,6 @@ update msg model =
 
 type alias DeckPresence =
     { onlineAt : String
-    , myTurn : Bool
     }
 
 
@@ -275,9 +306,8 @@ type alias Player =
 
 deckPresenceDecoder : JD.Decoder DeckPresence
 deckPresenceDecoder =
-    JD.map2 DeckPresence
+    JD.map DeckPresence
         (JD.field "online_at" JD.string)
-        (JD.field "my_turn" JD.bool)
 
 
 joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
@@ -306,7 +336,10 @@ patchItems : String -> String -> JE.Value -> Pusher.Push Msg
 patchItems event gameId reqBody =
     Pusher.init event ("game_room:" ++ gameId)
         |> Pusher.withPayload reqBody
-        |> Pusher.onOk PatchResponse
+
+
+
+-- |> Pusher.onOk PatchResponse
 
 
 beforeSubmit : Game.Model -> Msg
@@ -352,7 +385,7 @@ viewCopyUrl =
 
 waiting : a -> List Player -> Maybe a
 waiting a players =
-    if (List.length players) < 2 then
+    if 0 < (List.length players) && (List.length players) < 2 then
         Just a
     else
         Nothing
@@ -373,7 +406,17 @@ view model =
                 ]
             ]
         , section [ class "flex justify-between flex-auto flex-none-l self-end db-l mt3 mt0-l ml2-l mb5-l pb3-l" ]
-            [ a
+            [ section []
+                [ span [ class "blue" ]
+                    [ text
+                        (if model.game.myTurn then
+                            "Playing .."
+                         else
+                            "Waiting .."
+                        )
+                    ]
+                ]
+            , a
                 [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
                 , onClick Exchange
                 ]

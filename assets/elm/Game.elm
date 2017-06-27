@@ -10,6 +10,7 @@ type alias Model =
     { items : Item.Model
     , board : Board.Model
     , choices : List ( String, Int, Int )
+    , myTurn : Bool
     }
 
 
@@ -35,7 +36,7 @@ type Destination
 
 init : Model
 init =
-    Model Item.init Board.init []
+    Model Item.init Board.init [] False
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -123,22 +124,23 @@ viewChoiceFor position model =
             text ""
 
 
-type alias CommonState a =
-    { restItems : List a
-    , board : Board.Model
+type alias CommonState =
+    { board : Board.Model
+    , myTurn : Bool
     }
 
 
 decoder : JD.Decoder Model
 decoder =
-    JD.map3 Model
+    JD.map4 Model
         (Item.decoder)
         (Board.decoder)
         (JD.succeed [])
+        (JD.field "myTurn" JD.bool)
 
 
-commonStateDecoder : JD.Decoder (CommonState Item.RestItem)
+commonStateDecoder : JD.Decoder CommonState
 commonStateDecoder =
     JD.map2 CommonState
-        (JD.field "restItems" <| JD.list Item.restItemsDecoder)
         (Board.decoder)
+        (JD.field "myTurn" JD.bool)
