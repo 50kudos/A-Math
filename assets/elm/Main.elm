@@ -364,8 +364,8 @@ subscriptions model =
     Socket.listen model.phxSocket PhoenixMsg
 
 
-viewCopyUrl : Html msg
-viewCopyUrl =
+viewCopyUrl : String -> Html msg
+viewCopyUrl gameId =
     div [ class "fixed z-9999 h-100 w-100 flex items-center justify-center light-gray bg-black-70" ]
         [ div [ class "w-90 w-50-l" ]
             [ label [ for "game_url", class "f4 db mb2" ] [ text "Game room url" ]
@@ -375,7 +375,7 @@ viewCopyUrl =
                 , autofocus True
                 , id "game_url"
                 , class "pointer input-reset ba b--black-20 pa2 mb2 db w-100"
-                , defaultValue "http://localhost:4000/game/axY2XVf3v1ONGHz8ZfvN25kRJ9qEeog3"
+                , defaultValue ("http://localhost:4000/game/" ++ gameId)
                 ]
                 []
             , small [ class "f6 white-80 db mb2" ] [ text "To play the game, copy and send the url to your friend!" ]
@@ -394,7 +394,7 @@ waiting a players =
 view : Model -> Html Msg
 view model =
     div [ class "flex flex-wrap flex-nowrap-l justify-center items-center items-stretch-m" ]
-        [ waiting viewCopyUrl model.players |> Maybe.withDefault (text "")
+        [ waiting (viewCopyUrl model.gameId) model.players |> Maybe.withDefault (text "")
         , Item.restItems model.game.items
         , section [ class "w-40-l mh4-l mb3-l" ]
             [ div [ class "relative" ]
