@@ -10,7 +10,8 @@ defmodule AMath.Web.GameRoomChannel do
   def join("game_room:" <> game_id, _payload, socket) do
     with true <- authorized?(game_id),
       %Item{} = game <- Game.get_item!(game_id),
-      {:ok, deck} <- get_available_deck(socket, game.items)
+      {:ok, deck} <- get_available_deck(socket, game.items),
+      {:ok, game} <- Game.enqueue_deck(game, &(Enum.uniq(&1 ++ [deck.id])))
     do
       send(self(), :after_join)
 

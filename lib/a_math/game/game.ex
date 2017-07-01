@@ -96,7 +96,7 @@ defmodule AMath.Game do
   end
   
   def generate_game_id() do
-    :crypto.strong_rand_bytes(32) |> Base.encode64 |> binary_part(0, 32)
+    :crypto.strong_rand_bytes(32) |> Base.url_encode64() |> binary_part(0, 32)
   end
 
   def delete_item(%Item{} = item) do
@@ -266,6 +266,5 @@ defmodule AMath.Game do
   end
   
   def handle_turn([], _deck_id), do: false
-  def handle_turn([a], _deck_id), do: false
   def handle_turn([first|_], deck_id), do: first == deck_id
 end

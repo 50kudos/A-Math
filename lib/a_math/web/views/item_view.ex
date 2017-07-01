@@ -12,8 +12,6 @@ defmodule AMath.Web.ItemView do
   def render("show.json", %{state: data, deck: deck}) do
     %{
       deckId: Phoenix.Token.sign(Endpoint, "The north remembers", deck.id),
-      # myTurn: List.first(data.turn_queue) == deck.id,
-      # boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
       myItems: render_many(deck.items, ItemView, "my_item.json"),
       restItems: render_many(data.restItems, ItemView, "item.json")
     }
