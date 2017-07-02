@@ -191,7 +191,7 @@ view choice model toMsg =
         viewSlot i j multiplier =
             case List.Extra.find (H.isAtIndex i j) model.committedItems of
                 Just item ->
-                    slot Nope "bg-dark-blue light-gray b--dark-gray" [ desc "" (H.castChoice item.item item.value) "" ]
+                    slot Nope "bg-dark-blue br2 light-gray b--black-0125" [ desc "" (H.castChoice item.item item.value) "" ]
 
                 Nothing ->
                     case List.Extra.find (H.isAtIndex i j) model.stagingItems of

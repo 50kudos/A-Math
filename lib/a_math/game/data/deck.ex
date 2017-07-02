@@ -15,7 +15,6 @@ defmodule AMath.Game.Data.Deck do
     struct
     |> cast(attrs, [:point])
     |> cast_embed(:items, with: &items_changeset/2)
-    |> validate_length(:items, min: 8, max: 16)
   end
   
   defp items_changeset(struct, attrs) do

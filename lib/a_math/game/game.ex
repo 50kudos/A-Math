@@ -33,8 +33,8 @@ defmodule AMath.Game do
 
     with {:ok, attrs} <- is_any_item(attrs),
       {:ok, new_data, committed_count, point} <- commit_board(game, attrs),
-      {:ok, new_data, random_items} <- take_rest(new_data, committed_count),
-      {:ok, new_data} <- update_mine(new_data, attrs, random_items, deck_key),
+      {:ok, new_data, taken_items} <- take_rest(new_data, committed_count),
+      {:ok, new_data} <- update_mine(new_data, attrs, taken_items, deck_key),
       {:ok, new_data} <- update_point(new_data, point, deck_key)
     do
       prev_data
@@ -48,15 +48,19 @@ defmodule AMath.Game do
     exchanged_count = Enum.count(attrs["boardItems"])
 
     with {:ok, attrs} <- is_any_item(attrs),
-      {:ok, new_data, random_items} <- take_rest(game, exchanged_count),
+      {:ok, new_data, taken_items} <- take_rest(game, exchanged_count),
+      {:ok, new_data, taken_items} <- handle_if_empty_rest(new_data, taken_items),
       {:ok, new_data} <- add_rest(new_data, attrs),
-      {:ok, new_data} <- update_mine(new_data, attrs, random_items, deck_key)
+      {:ok, new_data} <- update_mine(new_data, attrs, taken_items, deck_key)
     do
       prev_data
       |> Data.changeset(new_data)
       |> Repo.update()
     end
   end
+  
+  def handle_if_empty_rest(%{items: _}, []), do: {:error, %{reason: :empty_rest}}
+  def handle_if_empty_rest(%{items: _} = game, taken_items), do: {:ok, game, taken_items}
   
   def enqueue_deck(game, fun \\ fn x -> x end) do
     new_game = game
@@ -198,49 +202,37 @@ defmodule AMath.Game do
     end
   end
 
-  def take_rest(%{items: _} = game, committed_count) do
-    random_items = Rule.take_random_rest(game.items.restItems, committed_count)
-  
-    update_rest = fn (restItems, taking_items) ->
-      taking_items = Data.compact_items(taking_items)
-
-      restItems
-      |> Enum.map(fn rest ->
-        with {_item,ea} <- Enum.find(taking_items, &(elem(&1,0) == rest.item)) do
-          %{rest | ea: rest.ea - ea}
-        else
-          nil -> rest
-        end
-      end)
-    end
-
-    {
-      :ok,
-      update_in(game, [:items, :restItems], &update_rest.(&1, random_items)),
-      random_items
-    }
+  def take_rest(%{items: _} = game, taking_count) do
+    random_items = Rule.take_random_rest(game.items.restItems, taking_count)
+    
+    updated_rest = update_in(game, [:items, :restItems], fn rest ->
+      update_rest(rest, random_items, &Kernel.-/2)
+    end)
+    
+    {:ok, updated_rest, random_items}
   end
-  
+
   defp add_rest(%{items: _} = game, %{"boardItems" => staging_items}) do
     exchanged_items = Data.board_map(staging_items)
+
+    updated_rest = update_in(game, [:items, :restItems], fn rest ->
+      update_rest(rest, exchanged_items, &Kernel.+/2)
+    end)
     
-    update_rest = fn (restItems, adding_items) ->
-      adding_items = Data.compact_items(adding_items)
+    {:ok, updated_rest}
+  end
+  
+  defp update_rest(restItems, items, fun) do
+    items = Data.compact_items(items)
 
-      restItems
-      |> Enum.map(fn rest ->
-        with {_item,ea} <- Enum.find(adding_items, &(elem(&1,0) == rest.item)) do
-          %{rest | ea: rest.ea + ea}
-        else
-          nil -> rest
-        end
-      end)
-    end
-
-    {
-      :ok,
-      update_in(game, [:items, :restItems], &update_rest.(&1, exchanged_items))
-    }
+    restItems
+    |> Enum.map(fn rest ->
+      with {_item,ea} <- Enum.find(items, &(elem(&1,0) == rest.item)) do
+        %{rest | ea: fun.(rest.ea, ea)}
+      else
+        nil -> rest
+      end
+    end)
   end
 
   def update_mine(%{items: _} = game, %{"boardItems" => staging_items}, random_items, deck_key \\ nil) do

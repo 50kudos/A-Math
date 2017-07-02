@@ -86,7 +86,7 @@ defmodule AMath.Web.GameRoomChannel do
         |> broadcast_common_state(new_game.items)
       }
     else
-      {:error, _} -> {:noreply, socket}
+      _ -> {:noreply, socket}
     end
   end
   
@@ -131,10 +131,6 @@ defmodule AMath.Web.GameRoomChannel do
           (Enum.sort(Enum.map list1, &(&1.online_at)) |> List.first())
         end)
       |> Enum.map(fn {k,_} -> k end)
-  end
-  
-  defp get_tern(game) do
-    game.items.turn_queue |> List.first()
   end
 
   defp authorized?(_payload) do
