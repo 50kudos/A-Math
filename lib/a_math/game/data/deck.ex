@@ -3,7 +3,7 @@ defmodule AMath.Game.Data.Deck do
   import Ecto.Changeset
 
   embedded_schema do
-    field :point, :integer
+    field :point, :integer, default: 0
 
     embeds_many :items, Item, primary_key: false, on_replace: :delete do
       field :item, :string

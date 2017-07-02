@@ -32,9 +32,10 @@ defmodule AMath.Game do
     game = Data.to_map(prev_data)
 
     with {:ok, attrs} <- is_any_item(attrs),
-      {:ok, new_data, committed_count} <- commit_board(game, attrs),
+      {:ok, new_data, committed_count, point} <- commit_board(game, attrs),
       {:ok, new_data, random_items} <- take_rest(new_data, committed_count),
-      {:ok, new_data} <- update_mine(new_data, attrs, random_items, deck_key)
+      {:ok, new_data} <- update_mine(new_data, attrs, random_items, deck_key),
+      {:ok, new_data} <- update_point(new_data, point, deck_key)
     do
       prev_data
       |> Data.changeset(new_data)
@@ -113,10 +114,13 @@ defmodule AMath.Game do
   end
 
   def commit_board(%{items: items} = game, %{"boardItems" => staging_items}) do
-    with {:ok, new_board} <- commit(items.boardItems, staging_items)
+    with {:ok, new_board, cont_items} <- commit(items.boardItems, staging_items)
     do
-      new_data = update_in(game, [:items, :boardItems], fn _ -> new_board end)
-      {:ok, new_data, Enum.count(staging_items)}
+      {:ok,
+        update_in(game, [:items, :boardItems], fn _ -> new_board end),
+        Enum.count(staging_items),
+        Enum.reduce(cont_items, 0, fn (item,acc) -> item.point + acc end)
+      }
     else
       _ ->
         {:error, :not_found}
@@ -136,14 +140,14 @@ defmodule AMath.Game do
           Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_x(x), Rule.by_y) &&
           Rule.is_equation_correct(all_xitems) ->
-            {:ok, all_items}
+            {:ok, all_items, all_xitems}
 
           true ->
             with {:ok, equations} <- Rule.form_equation(all_xitems, staging_items, Rule.by_y, &Rule.at_y/1),
               true <- Rule.has_xslot_gap(all_items, staging_items),
               true <- Rule.is_equation_correct(equations) do
               
-              {:ok, all_items}
+              {:ok, all_items, equations}
             else
               _ -> :no_op
             end
@@ -156,14 +160,14 @@ defmodule AMath.Game do
           Rule.has_center_item(staging_items) &&
           Rule.is_continuous(staging_items, Rule.at_y(y), Rule.by_x) &&
           Rule.is_equation_correct(all_yitems) ->
-            {:ok, all_items}
+            {:ok, all_items, all_yitems}
 
           true ->
             with {:ok, equations} <- Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1),
               true <- Rule.has_yslot_gap(all_items, staging_items),
               true <- Rule.is_equation_correct(equations) do
               
-              {:ok, all_items}
+              {:ok, all_items, equations}
             else
               _ -> :no_op
             end
@@ -176,14 +180,14 @@ defmodule AMath.Game do
           true <- Rule.has_xslot_gap(all_items, staging_items),
           true <- Rule.is_equation_correct(x_equations) do
 
-          {:ok, all_items}
+          {:ok, all_items, x_equations}
         else
           _ ->
             with {:ok, y_equations} <- Rule.form_equation(all_yitems, staging_items, Rule.by_x, &Rule.at_x/1),
               true <- Rule.has_yslot_gap(all_items, staging_items),
               true <- Rule.is_equation_correct(y_equations) do
              
-              {:ok, all_items}
+              {:ok, all_items, y_equations}
             else
               _ -> :no_op
             end
@@ -254,9 +258,13 @@ defmodule AMath.Game do
       |> Enum.concat(Enum.map(random_items, &(%{item: &1.item, point: &1.point})))
     end
 
-    {:ok, update_in(game, [:items, deck_key, :items], update_mine) }
+    {:ok, update_in(game, [:items, deck_key, :items], update_mine)}
   end
-
+  
+  def update_point(%{items: _} = game, point, deck_key) do
+    {:ok, update_in(game, [:items, deck_key, :point], &(&1 + point))}
+  end
+  
   def get_deck(game, deck_id) do
     if deck_id == game.items.p1_deck.id do
       Map.get(game.items, :p1_deck) |> Map.put(:key, :p1_deck)

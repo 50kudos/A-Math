@@ -11,6 +11,8 @@ type alias Model =
     , board : Board.Model
     , choices : List ( String, Int, Int )
     , myTurn : Bool
+    , p1Point : Int
+    , p2Point : Int
     }
 
 
@@ -36,7 +38,13 @@ type Destination
 
 init : Model
 init =
-    Model Item.init Board.init [] False
+    { items = Item.init
+    , board = Board.init
+    , choices = []
+    , myTurn = False
+    , p1Point = 0
+    , p2Point = 0
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -127,20 +135,26 @@ viewChoiceFor position model =
 type alias CommonState =
     { board : Board.Model
     , myTurn : Bool
+    , p1Point : Int
+    , p2Point : Int
     }
 
 
 decoder : JD.Decoder Model
 decoder =
-    JD.map4 Model
+    JD.map6 Model
         (Item.decoder)
         (Board.decoder)
         (JD.succeed [])
         (JD.field "myTurn" JD.bool)
+        (JD.field "p1Point" JD.int)
+        (JD.field "p2Point" JD.int)
 
 
 commonStateDecoder : JD.Decoder CommonState
 commonStateDecoder =
-    JD.map2 CommonState
+    JD.map4 CommonState
         (Board.decoder)
         (JD.field "myTurn" JD.bool)
+        (JD.field "p1Point" JD.int)
+        (JD.field "p2Point" JD.int)

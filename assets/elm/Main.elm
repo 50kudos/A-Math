@@ -252,7 +252,7 @@ normalUpdate msg model =
                             model.game.items
 
                         new_game =
-                            { game | board = gameData.board, myTurn = gameData.myTurn }
+                            { game | board = gameData.board, myTurn = gameData.myTurn, p1Point = gameData.p1Point, p2Point = gameData.p2Point }
                     in
                         if
                             Board.commitUnchanged model.game.board gameData.board
@@ -407,6 +407,16 @@ view model =
             ]
         , section [ class "flex justify-between flex-auto flex-none-l self-end db-l mt3 mt0-l ml2-l mb5-l pb3-l" ]
             [ section []
+                [ div []
+                    [ span [ class "near-white" ] [ text "P1: " ]
+                    , span [] [ text (toString model.game.p1Point) ]
+                    ]
+                , div []
+                    [ span [ class "near-white" ] [ text "P2: " ]
+                    , span [] [ text (toString model.game.p2Point) ]
+                    ]
+                ]
+            , section []
                 [ span [ class "blue" ]
                     [ text
                         (if model.game.myTurn then

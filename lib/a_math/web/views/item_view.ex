@@ -20,7 +20,9 @@ defmodule AMath.Web.ItemView do
   def render("common_show.json", %{state: data}) do
     %{
       myTurn: data.turn_queue,
-      boardItems: render_many(data.boardItems, ItemView, "board_item.json")
+      boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
+      p1Point: data.p1_deck.point,
+      p2Point: data.p2_deck.point
     }
   end
   
@@ -28,7 +30,9 @@ defmodule AMath.Web.ItemView do
     render("show.json", %{state: data, deck: deck})
     |> Map.merge(%{
         myTurn: Game.handle_turn(data.turn_queue, deck.id),
-        boardItems: render_many(data.boardItems, ItemView, "board_item.json")
+        boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
+        p1Point: data.p1_deck.point,
+        p2Point: data.p2_deck.point
       })
   end
 
