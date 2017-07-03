@@ -12,28 +12,25 @@ defmodule AMath.Web.ItemView do
   def render("show.json", %{state: data, deck: deck}) do
     %{
       deckId: Phoenix.Token.sign(Endpoint, "The north remembers", deck.id),
-      myItems: render_many(deck.items, ItemView, "my_item.json"),
-      restItems: render_many(data.restItems, ItemView, "item.json")
+      myItems: render_many(deck.items, ItemView, "my_item.json")
     }
   end
 
-  def render("common_show.json", %{state: data}) do
+  def render("common_show.json", %{state: data, deck: deck}) do
     %{
-      myTurn: data.turn_queue,
+      myTurn: Game.handle_turn(data.turn_queue, deck.id),
       boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
+      restItems: render_many(Game.get_rest_for(data, deck.id), ItemView, "item.json"),
       p1Point: data.p1_deck.point,
       p2Point: data.p2_deck.point
     }
   end
   
   def render("join.json", %{state: data, deck: deck}) do
-    render("show.json", %{state: data, deck: deck})
-    |> Map.merge(%{
-        myTurn: Game.handle_turn(data.turn_queue, deck.id),
-        boardItems: render_many(data.boardItems, ItemView, "board_item.json"),
-        p1Point: data.p1_deck.point,
-        p2Point: data.p2_deck.point
-      })
+    Map.merge(
+      render("show.json", %{state: data, deck: deck}),
+      render("common_show.json", %{state: data, deck: deck})
+    )
   end
 
   def render("item.json", %{item: item}) do

@@ -2,16 +2,15 @@ module Board
     exposing
         ( Model
         , Msg
+        , CommittedItem
         , init
         , update
         , addItem
         , hideMovedItem
         , clearStaging
-        , commitUnchanged
-        , exchanged
         , markChoice
         , view
-        , decoder
+        , committedItemsDecoder
         , encoder
         )
 
@@ -123,16 +122,6 @@ otherBeingPicked { stagingItems } i j =
         |> List.any (\item -> not (H.isAtIndex i j item) && item.picked)
 
 
-commitUnchanged : Model -> Model -> Bool
-commitUnchanged existing new =
-    existing.committedItems == new.committedItems
-
-
-exchanged : Model -> Model -> Bool
-exchanged existing new =
-    existing.committedItems == new.committedItems
-
-
 markChoice : Int -> Int -> String -> Model -> Model
 markChoice i j strItem model =
     { model
@@ -228,21 +217,14 @@ view choice model toMsg =
             section [ class "avenir" ] (List.indexedMap row board)
 
 
-decoder : JD.Decoder Model
-decoder =
-    let
-        committedItemsDecoder : JD.Decoder CommittedItem
-        committedItemsDecoder =
-            JD.map5 CommittedItem
-                (JD.field "item" JD.string)
-                (JD.field "i" JD.int)
-                (JD.field "j" JD.int)
-                (JD.field "point" JD.int)
-                (JD.field "value" JD.string)
-    in
-        JD.map2 Model
-            (JD.at [ "boardItems" ] <| JD.list committedItemsDecoder)
-            (JD.succeed init.stagingItems)
+committedItemsDecoder : JD.Decoder CommittedItem
+committedItemsDecoder =
+    JD.map5 CommittedItem
+        (JD.field "item" JD.string)
+        (JD.field "i" JD.int)
+        (JD.field "j" JD.int)
+        (JD.field "point" JD.int)
+        (JD.field "value" JD.string)
 
 
 encoder : Model -> JE.Value

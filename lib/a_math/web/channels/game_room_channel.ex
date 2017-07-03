@@ -38,10 +38,13 @@ defmodule AMath.Web.GameRoomChannel do
     
     {:noreply, socket}
   end
-  def handle_out("common_state", resp, socket) do
-    turn_id = List.first(resp.myTurn)
-    push socket, "common_state", %{resp | myTurn: turn_id == socket.assigns.deck_id }
+  def handle_out("common_state", data, socket) do
+    common_state =
+      "common_show.json"
+      |> ItemView.render(%{state: data, deck: %{id: socket.assigns.deck_id}})
 
+    push(socket, "common_state", common_state)
+    
     {:noreply, socket}
   end
   
@@ -101,8 +104,7 @@ defmodule AMath.Web.GameRoomChannel do
   end
   
   defp broadcast_common_state(socket, items) do
-    common_state = ItemView.render("common_show.json", %{state: items})
-    broadcast(socket, "common_state", common_state)
+    broadcast(socket, "common_state", items)
     socket
   end
   

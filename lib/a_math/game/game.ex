@@ -24,7 +24,7 @@ defmodule AMath.Game do
   end
   
   def put_deck(game, deck_key, items) do
-    deck_items = %{items: Enum.map(items, &(Map.take &1, [:item, :point]))}
+    deck_items = %{items: Enum.map(items, &(Map.take &1, [:item, :point])), point: 0}
     %{game | items: Map.put(game.items, deck_key, deck_items)}
   end
   
@@ -83,8 +83,8 @@ defmodule AMath.Game do
       {:ok, game, p2_items} <- take_rest(initial_data, 8)
     do
       game = game
-      |> put_deck(p1_items, :p1_deck)
-      |> put_deck(p2_items, :p2_deck)
+      |> put_deck(:p1_deck, p1_items)
+      |> put_deck(:p2_deck, p2_items)
 
       get_item!(id)
       |> Data.changeset(game)
@@ -262,6 +262,17 @@ defmodule AMath.Game do
       Map.get(game.items, :p1_deck) |> Map.put(:key, :p1_deck)
     else
       Map.get(game.items, :p2_deck) |> Map.put(:key, :p2_deck)
+    end
+  end
+  
+  def get_rest_for(game_items, deck_id) do
+    %{items: items} = Data.to_map(%{items: game_items})
+
+    cond do
+      items.p1_deck.id == deck_id ->
+        update_rest(items.restItems, items.p2_deck.items, &Kernel.+/2)
+      true ->
+        update_rest(items.restItems, items.p1_deck.items, &Kernel.+/2)
     end
   end
   

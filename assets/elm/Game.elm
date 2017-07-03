@@ -132,29 +132,46 @@ viewChoiceFor position model =
             text ""
 
 
+type alias DeckState =
+    { deckId : String
+    , myItems : List Item.DeckItem
+    }
+
+
 type alias CommonState =
-    { board : Board.Model
-    , myTurn : Bool
+    { myTurn : Bool
+    , boardItems : List Board.CommittedItem
+    , restItems : List Item.RestItem
     , p1Point : Int
     , p2Point : Int
     }
 
 
-decoder : JD.Decoder Model
-decoder =
-    JD.map6 Model
-        (Item.decoder)
-        (Board.decoder)
-        (JD.succeed [])
-        (JD.field "myTurn" JD.bool)
-        (JD.field "p1Point" JD.int)
-        (JD.field "p2Point" JD.int)
+type alias JoinedState =
+    { deck : DeckState
+    , common : CommonState
+    }
+
+
+myStateDecoder : JD.Decoder DeckState
+myStateDecoder =
+    JD.map2 DeckState
+        (JD.field "deckId" JD.string)
+        (JD.field "myItems" <| JD.list Item.myItemsDecoder)
 
 
 commonStateDecoder : JD.Decoder CommonState
 commonStateDecoder =
-    JD.map4 CommonState
-        (Board.decoder)
+    JD.map5 CommonState
         (JD.field "myTurn" JD.bool)
+        (JD.field "boardItems" <| JD.list Board.committedItemsDecoder)
+        (JD.field "restItems" <| JD.list Item.restItemsDecoder)
         (JD.field "p1Point" JD.int)
         (JD.field "p2Point" JD.int)
+
+
+joinedDecoder : JD.Decoder JoinedState
+joinedDecoder =
+    JD.map2 JoinedState
+        myStateDecoder
+        commonStateDecoder

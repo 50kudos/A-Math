@@ -53,7 +53,7 @@ defmodule AMath.Game.Data do
     |> cast(attrs, [:item, :i, :j, :point, :value])
   end
 
-  def to_map(%__MODULE_{items: struct}) do
+  def to_map(%{items: struct}) do
     %{items: Poison.encode!(struct) |> Poison.decode!(keys: :atoms!)}
   end
   

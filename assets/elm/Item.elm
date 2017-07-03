@@ -2,6 +2,7 @@ module Item
     exposing
         ( Model
         , RestItem
+        , DeckItem
         , Msg
         , init
         , update
@@ -10,7 +11,8 @@ module Item
         , hideMovedItem
         , viewChoices
         , itemChoices
-        , decoder
+        , myItemsDecoder
+        , restItemsDecoder
         , myItems
         , restItems
         )
@@ -62,14 +64,6 @@ myItemsDecoder =
         (JD.field "point" JD.int)
         (JD.succeed False)
         (JD.succeed False)
-
-
-decoder : JD.Decoder Model
-decoder =
-    JD.map3 Model
-        (JD.field "deckId" JD.string)
-        (JD.field "myItems" <| JD.list myItemsDecoder)
-        (JD.field "restItems" <| JD.list restItemsDecoder)
 
 
 update : Msg -> Model -> Model

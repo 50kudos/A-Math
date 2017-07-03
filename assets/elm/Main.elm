@@ -49,7 +49,6 @@ type Msg
     | BatchRecall
     | EnqueueChoices (List ( String, Int, Int ))
     | Push
-    | PatchResponse JE.Value
     | ReceiveNewState JE.Value
     | ReceiveNewCommonState JE.Value
     | ReceivePresence JE.Value
@@ -82,9 +81,6 @@ update msg model =
                 normalUpdate msg model
 
             PhoenixMsg a ->
-                normalUpdate msg model
-
-            PatchResponse a ->
                 normalUpdate msg model
 
             ReceiveNewState a ->
@@ -145,9 +141,41 @@ normalUpdate msg model =
                 )
 
         JoinedResponse response ->
-            case JD.decodeValue Game.decoder response of
-                Ok game ->
-                    { model | game = game } ! [ Cmd.none ]
+            case JD.decodeValue Game.joinedDecoder response of
+                Ok gameData ->
+                    let
+                        items =
+                            model.game.items
+
+                        items_ =
+                            { items
+                                | deckId = gameData.deck.deckId
+                                , myItems = gameData.deck.myItems
+                                , restItems = gameData.common.restItems
+                            }
+
+                        board =
+                            model.game.board
+
+                        board_ =
+                            { board
+                                | committedItems = gameData.common.boardItems
+                            }
+
+                        game =
+                            model.game
+
+                        game_ =
+                            { game
+                                | items = items_
+                                , board = board_
+                                , myTurn = gameData.common.myTurn
+                                , p1Point = gameData.common.p1Point
+                                , p2Point = gameData.common.p2Point
+                            }
+                    in
+                        { model | game = game_ }
+                            ! [ Cmd.none ]
 
                 Err error ->
                     Debug.log error ( model, Cmd.none )
@@ -161,20 +189,6 @@ normalUpdate msg model =
                     Socket.push (patchItems "reset" model.gameId reqBody) model.phxSocket
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
-
-        PatchResponse response ->
-            case JD.decodeValue Game.decoder response of
-                Ok gameData ->
-                    if
-                        Board.commitUnchanged model.game.board gameData.board
-                            && not (Board.exchanged model.game.board gameData.board)
-                    then
-                        model ! [ Cmd.none ]
-                    else
-                        { model | game = gameData } ! [ Cmd.none ]
-
-                Err error ->
-                    Debug.log error ( model, Cmd.none )
 
         EnqueueChoices forPosition ->
             let
@@ -227,22 +241,7 @@ normalUpdate msg model =
                     ! [ Cmd.none ]
 
         ReceiveNewState response ->
-            case JD.decodeValue Item.decoder response of
-                Ok gameData ->
-                    let
-                        game =
-                            model.game
-
-                        newGame =
-                            { game | items = gameData }
-                    in
-                        { model | game = newGame } ! [ Cmd.none ]
-
-                Err error ->
-                    Debug.log error ( model, Cmd.none )
-
-        ReceiveNewCommonState response ->
-            case JD.decodeValue Game.commonStateDecoder response of
+            case JD.decodeValue Game.myStateDecoder response of
                 Ok gameData ->
                     let
                         game =
@@ -251,16 +250,49 @@ normalUpdate msg model =
                         items =
                             model.game.items
 
-                        new_game =
-                            { game | board = gameData.board, myTurn = gameData.myTurn, p1Point = gameData.p1Point, p2Point = gameData.p2Point }
+                        items_ =
+                            { items | deckId = gameData.deckId, myItems = gameData.myItems }
+
+                        newGame =
+                            { game | items = items_ }
                     in
-                        if
-                            Board.commitUnchanged model.game.board gameData.board
-                                && not (Board.exchanged model.game.board gameData.board)
-                        then
-                            model ! [ Cmd.none ]
-                        else
-                            { model | game = new_game } ! [ Cmd.none ]
+                        { model | game = newGame } ! [ Cmd.none ]
+
+                Err error ->
+                    Debug.log error ( model, Cmd.none )
+
+        ReceiveNewCommonState response ->
+            case JD.decodeValue Game.commonStateDecoder response of
+                Ok commonGameData ->
+                    let
+                        game =
+                            model.game
+
+                        items =
+                            model.game.items
+
+                        items_ =
+                            { items | restItems = commonGameData.restItems }
+
+                        board =
+                            model.game.board
+
+                        board_ =
+                            { board
+                                | committedItems = commonGameData.boardItems
+                                , stagingItems = []
+                            }
+
+                        new_game =
+                            { game
+                                | items = items_
+                                , board = board_
+                                , myTurn = commonGameData.myTurn
+                                , p1Point = commonGameData.p1Point
+                                , p2Point = commonGameData.p2Point
+                            }
+                    in
+                        { model | game = new_game } ! [ Cmd.none ]
 
                 Err error ->
                     Debug.log error ( model, Cmd.none )
@@ -336,10 +368,6 @@ patchItems : String -> String -> JE.Value -> Pusher.Push Msg
 patchItems event gameId reqBody =
     Pusher.init event ("game_room:" ++ gameId)
         |> Pusher.withPayload reqBody
-
-
-
--- |> Pusher.onOk PatchResponse
 
 
 beforeSubmit : Game.Model -> Msg
