@@ -11,7 +11,7 @@ defmodule AMath.Game do
     initial_data = AMath.Game.Intializer.sample()
     
     with {:ok, game, p1_items} <- take_rest(initial_data, 8),
-      {:ok, game, p2_items} <- take_rest(initial_data, 8)
+      {:ok, game, p2_items} <- take_rest(game, 8)
     do
       game = game
       |> put_deck(:p1_deck, p1_items)
@@ -80,7 +80,7 @@ defmodule AMath.Game do
     initial_data = AMath.Game.Intializer.sample()
     
     with {:ok, game, p1_items} <- take_rest(initial_data, 8),
-      {:ok, game, p2_items} <- take_rest(initial_data, 8)
+      {:ok, game, p2_items} <- take_rest(game, 8)
     do
       game = game
       |> put_deck(:p1_deck, p1_items)
