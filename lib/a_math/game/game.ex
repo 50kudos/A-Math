@@ -35,7 +35,8 @@ defmodule AMath.Game do
       {:ok, new_data, committed_count, point} <- commit_board(game, attrs),
       {:ok, new_data, taken_items} <- take_rest(new_data, committed_count),
       {:ok, new_data} <- update_mine(new_data, attrs, taken_items, deck_key),
-      {:ok, new_data} <- update_point(new_data, point, deck_key)
+      {:ok, new_data} <- update_point(new_data, point, deck_key),
+      {:ok, new_data} <- reset_pass_count(new_data)
     do
       prev_data
       |> Data.changeset(new_data)
@@ -291,8 +292,19 @@ defmodule AMath.Game do
     |> Repo.update()
   end
   
-  def ended?(%Data{} = data) do
-    data.passed >= 3
+  def reset_pass_count(%{items: _} = game) do
+    {:ok, update_in(game, [:items, :passed], &(&1 * 0))}
+  end
+  
+  def ended_status(%Data{} = data) do
+    cond do
+      data.passed >= 3 ->
+        :passing_ended
+      data.p1_deck.items == [] || data.p2_deck.items == [] ->
+        :deck_ended
+      true ->
+        :running
+    end
   end
   
   def handle_turn([], _deck_id), do: false

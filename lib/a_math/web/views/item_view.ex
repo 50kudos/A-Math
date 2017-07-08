@@ -25,7 +25,7 @@ defmodule AMath.Web.ItemView do
       restItems: render_many(Game.get_rest_for(data, deck.id), ItemView, "item.json"),
       p1Stat: player_stat(:p1Stat, data),
       p2Stat: player_stat(:p2Stat, data),
-      gameEnded: Game.ended?(data)
+      endStatus: Game.ended_status(data)
     }
   end
   
@@ -58,7 +58,7 @@ defmodule AMath.Web.ItemView do
   defp player_stat(:p1Stat, data) do
     p1_stat = %{deckName: deck_name(data.p1_deck.id), point: data.p1_deck.point}
 
-    if Game.ended?(data) do
+    if Game.ended_status(data) != :running do
       p1_stat = Map.merge(p1_stat, %{deckPoint: items_point(data.p1_deck.items)})
     end
     p1_stat
@@ -66,7 +66,7 @@ defmodule AMath.Web.ItemView do
   defp player_stat(:p2Stat, data) do
     p2_stat = %{deckName: deck_name(data.p2_deck.id), point: data.p2_deck.point}
 
-    if Game.ended?(data) do
+    if Game.ended_status(data) != :running do
       p2_stat = Map.merge(p2_stat, %{deckPoint: items_point(data.p2_deck.items)})
     end
     p2_stat

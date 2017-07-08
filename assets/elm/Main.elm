@@ -74,7 +74,7 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    if model.game.ended then
+    if model.game.endStatus == Game.PassingEnded || model.game.endStatus == Game.DeckEnded then
         ( model, Cmd.none )
     else if model.game.myTurn then
         normalUpdate msg model
@@ -177,7 +177,7 @@ normalUpdate msg model =
                                 , exchangeable = gameData.common.exchangeable
                                 , p1Stat = gameData.common.p1Stat
                                 , p2Stat = gameData.common.p2Stat
-                                , ended = gameData.common.ended
+                                , endStatus = gameData.common.endStatus
                             }
                     in
                         { model | game = game_ }
@@ -314,7 +314,7 @@ normalUpdate msg model =
                                 , exchangeable = commonGameData.exchangeable
                                 , p1Stat = commonGameData.p1Stat
                                 , p2Stat = commonGameData.p2Stat
-                                , ended = commonGameData.ended
+                                , endStatus = commonGameData.endStatus
                             }
                     in
                         { model | game = new_game } ! [ Cmd.none ]
@@ -458,8 +458,8 @@ exchangeOrPass exchangeable exchangeMsg passMsg =
             [ text btnText ]
 
 
-viewStat : Game.Model -> Html msg
-viewStat game =
+viewStat : Game.Model -> Game.EndStatus -> Html msg
+viewStat game endStatus =
     let
         hightLightMyscore : Item.Model -> String -> String
         hightLightMyscore { deckName } deckName_ =
@@ -481,21 +481,49 @@ viewStat game =
                 deckName_ ++ " (You)"
             else
                 deckName_
+
+        passingEndDetail : Int -> Maybe Int -> List (Html msg)
+        passingEndDetail point deckPoint =
+            [ p [ class "ma0 fw1 f6" ]
+                [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 deckPoint) ]
+            , p
+                [ class "ma0 fw1 f6" ]
+                [ text <| "Toal = " ++ (toString <| point - (Maybe.withDefault 0 deckPoint)) ]
+            ]
+
+        deckEndDetail : Int -> Maybe Int -> List (Html msg)
+        deckEndDetail point opDeckPoint =
+            [ p [ class "ma0 fw1 f6" ]
+                [ text <| "Opponent Deck = +" ++ (toString <| Maybe.withDefault 0 opDeckPoint) ]
+            , p
+                [ class "ma0 fw1 f6" ]
+                [ text <| "Toal = " ++ (toString <| point + (Maybe.withDefault 0 opDeckPoint)) ]
+            ]
+
+        endingDetail : Game.EndStatus -> { x | point : Int, deckPoint : Maybe Int } -> { y | point : Int, deckPoint : Maybe Int } -> List (Html msg)
+        endingDetail endStatus aStat bStat =
+            case endStatus of
+                Game.PassingEnded ->
+                    passingEndDetail aStat.point aStat.deckPoint
+
+                Game.DeckEnded ->
+                    deckEndDetail aStat.point bStat.deckPoint
+
+                a ->
+                    Debug.log "Unexpected game ending status" [ text (toString a) ]
     in
         section []
             [ winOrLose game.items (winner game)
-            , div [ class <| hightLightMyscore game.items game.p1Stat.deckName ]
+            , div [ class <| hightLightMyscore game.items game.p1Stat.deckName ] <|
                 [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p1Stat.deckName ]
                 , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p1Stat.point) ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 game.p1Stat.deckPoint) ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Toal = " ++ (toString <| game.p1Stat.point - (Maybe.withDefault 0 game.p1Stat.deckPoint)) ]
                 ]
-            , div [ class <| hightLightMyscore game.items game.p2Stat.deckName ]
+                    ++ (endingDetail game.endStatus game.p1Stat game.p2Stat)
+            , div [ class <| hightLightMyscore game.items game.p2Stat.deckName ] <|
                 [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p2Stat.deckName ]
                 , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p2Stat.point) ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 game.p2Stat.deckPoint) ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Toal = " ++ (toString <| game.p2Stat.point - (Maybe.withDefault 0 game.p2Stat.deckPoint)) ]
                 ]
+                    ++ (endingDetail game.endStatus game.p2Stat game.p1Stat)
             ]
 
 
@@ -558,10 +586,15 @@ winner game =
 
 viewRightPanel : Game.Model -> Html Msg
 viewRightPanel game =
-    if game.ended then
-        viewStat game
-    else
-        viewPlaying game
+    case game.endStatus of
+        Game.Running ->
+            viewPlaying game
+
+        Game.PassingEnded ->
+            viewStat game Game.PassingEnded
+
+        Game.DeckEnded ->
+            viewStat game Game.DeckEnded
 
 
 view : Model -> Html Msg

@@ -82,7 +82,7 @@ defmodule AMath.Web.GameRoomChannel do
     game = get_game(socket)
     deck = get_deck(game, verify_deck(deck_id))
 
-    with false <- Game.ended?(game.items),
+    with :running <- Game.ended_status(game.items),
       {:ok, %Item{} = new_game} <- func.(game, item_params, deck.key),
       {:ok, new_game} <- Game.rotate_turn(new_game),
       %{id: _, key: _, items: _} = new_deck <- get_deck(new_game, deck.id)

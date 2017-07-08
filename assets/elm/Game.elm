@@ -14,7 +14,7 @@ type alias Model =
     , exchangeable : Bool
     , p1Stat : PlayerStat
     , p2Stat : PlayerStat
-    , ended : Bool
+    , endStatus : EndStatus
     }
 
 
@@ -27,6 +27,12 @@ type alias PlayerStat =
 
 type Msg
     = SelectChoice Int Int String
+
+
+type EndStatus
+    = DeckEnded
+    | PassingEnded
+    | Running
 
 
 type Choice
@@ -54,7 +60,7 @@ init =
     , exchangeable = True
     , p1Stat = PlayerStat "" 0 Nothing
     , p2Stat = PlayerStat "" 0 Nothing
-    , ended = False
+    , endStatus = Running
     }
 
 
@@ -157,7 +163,7 @@ type alias CommonState =
     , restItems : List Item.RestItem
     , p1Stat : PlayerStat
     , p2Stat : PlayerStat
-    , ended : Bool
+    , endStatus : EndStatus
     }
 
 
@@ -180,6 +186,26 @@ deckNameDeocder =
     JD.string |> JD.andThen (\name -> JD.succeed <| "ID#" ++ name)
 
 
+endStatusDecoder : JD.Decoder EndStatus
+endStatusDecoder =
+    JD.string
+        |> JD.andThen
+            (\name ->
+                case name of
+                    "running" ->
+                        JD.succeed Running
+
+                    "passing_ended" ->
+                        JD.succeed PassingEnded
+
+                    "deck_ended" ->
+                        JD.succeed DeckEnded
+
+                    _ ->
+                        JD.fail "Invalid end game status"
+            )
+
+
 playerStatDecocder : JD.Decoder PlayerStat
 playerStatDecocder =
     JD.map3 PlayerStat
@@ -197,7 +223,7 @@ commonStateDecoder =
         (JD.field "restItems" <| JD.list Item.restItemsDecoder)
         (JD.field "p1Stat" playerStatDecocder)
         (JD.field "p2Stat" playerStatDecocder)
-        (JD.field "gameEnded" JD.bool)
+        (JD.field "endStatus" endStatusDecoder)
 
 
 joinedDecoder : JD.Decoder JoinedState
