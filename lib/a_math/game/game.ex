@@ -276,6 +276,25 @@ defmodule AMath.Game do
     end
   end
   
+  def any_rest?(%{restItems: rest}) do
+    rest
+    |> Data.expand_items()
+    |> Enum.count()
+    |> Kernel.!==(0)
+  end
+  
+  def pass_turn(%Item{} = game, [], _deck_key) do
+    new_game = update_in(Data.to_map(game), [:items, :passed], &(&1 + 1))
+    
+    game
+    |> Data.changeset(new_game)
+    |> Repo.update()
+  end
+  
+  def ended?(%Data{} = data) do
+    data.passed >= 3
+  end
+  
   def handle_turn([], _deck_id), do: false
   def handle_turn([first|_], deck_id), do: first == deck_id
 end

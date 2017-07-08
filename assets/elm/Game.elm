@@ -11,8 +11,17 @@ type alias Model =
     , board : Board.Model
     , choices : List ( String, Int, Int )
     , myTurn : Bool
-    , p1Point : Int
-    , p2Point : Int
+    , exchangeable : Bool
+    , p1Stat : PlayerStat
+    , p2Stat : PlayerStat
+    , ended : Bool
+    }
+
+
+type alias PlayerStat =
+    { deckName : String
+    , point : Int
+    , deckPoint : Maybe Int
     }
 
 
@@ -42,8 +51,10 @@ init =
     , board = Board.init
     , choices = []
     , myTurn = False
-    , p1Point = 0
-    , p2Point = 0
+    , exchangeable = True
+    , p1Stat = PlayerStat "" 0 Nothing
+    , p2Stat = PlayerStat "" 0 Nothing
+    , ended = False
     }
 
 
@@ -134,16 +145,19 @@ viewChoiceFor position model =
 
 type alias DeckState =
     { deckId : String
+    , deckName : String
     , myItems : List Item.DeckItem
     }
 
 
 type alias CommonState =
     { myTurn : Bool
+    , exchangeable : Bool
     , boardItems : List Board.CommittedItem
     , restItems : List Item.RestItem
-    , p1Point : Int
-    , p2Point : Int
+    , p1Stat : PlayerStat
+    , p2Stat : PlayerStat
+    , ended : Bool
     }
 
 
@@ -155,19 +169,35 @@ type alias JoinedState =
 
 myStateDecoder : JD.Decoder DeckState
 myStateDecoder =
-    JD.map2 DeckState
+    JD.map3 DeckState
         (JD.field "deckId" JD.string)
+        (JD.field "deckName" deckNameDeocder)
         (JD.field "myItems" <| JD.list Item.myItemsDecoder)
+
+
+deckNameDeocder : JD.Decoder String
+deckNameDeocder =
+    JD.string |> JD.andThen (\name -> JD.succeed <| "ID#" ++ name)
+
+
+playerStatDecocder : JD.Decoder PlayerStat
+playerStatDecocder =
+    JD.map3 PlayerStat
+        (JD.field "deckName" deckNameDeocder)
+        (JD.field "point" JD.int)
+        (JD.maybe <| JD.field "deckPoint" JD.int)
 
 
 commonStateDecoder : JD.Decoder CommonState
 commonStateDecoder =
-    JD.map5 CommonState
+    JD.map7 CommonState
         (JD.field "myTurn" JD.bool)
+        (JD.field "exchangeable" JD.bool)
         (JD.field "boardItems" <| JD.list Board.committedItemsDecoder)
         (JD.field "restItems" <| JD.list Item.restItemsDecoder)
-        (JD.field "p1Point" JD.int)
-        (JD.field "p2Point" JD.int)
+        (JD.field "p1Stat" playerStatDecocder)
+        (JD.field "p2Stat" playerStatDecocder)
+        (JD.field "gameEnded" JD.bool)
 
 
 joinedDecoder : JD.Decoder JoinedState

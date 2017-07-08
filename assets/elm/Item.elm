@@ -27,6 +27,7 @@ import Helper as H
 
 type alias Model =
     { deckId : String
+    , deckName : String
     , myItems : List DeckItem
     , restItems : List RestItem
     }
@@ -47,7 +48,7 @@ type Msg
 
 init : Model
 init =
-    Model "" [] []
+    Model "" "" [] []
 
 
 restItemsDecoder : JD.Decoder RestItem

@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (Html, map, div, a, text, section, input, label, small, span)
+import Html exposing (Html, map, div, a, text, section, input, label, small, span, p)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class, defaultValue, type_, autofocus, for, id, readonly)
 import Phoenix.Socket as Socket
@@ -46,6 +46,7 @@ type Msg
     | JoinedResponse JE.Value
     | ResetGame
     | Exchange
+    | Pass
     | BatchRecall
     | EnqueueChoices (List ( String, Int, Int ))
     | Push
@@ -73,7 +74,9 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    if model.game.myTurn then
+    if model.game.ended then
+        ( model, Cmd.none )
+    else if model.game.myTurn then
         normalUpdate msg model
     else
         case msg of
@@ -150,6 +153,7 @@ normalUpdate msg model =
                         items_ =
                             { items
                                 | deckId = gameData.deck.deckId
+                                , deckName = gameData.deck.deckName
                                 , myItems = gameData.deck.myItems
                                 , restItems = gameData.common.restItems
                             }
@@ -170,8 +174,10 @@ normalUpdate msg model =
                                 | items = items_
                                 , board = board_
                                 , myTurn = gameData.common.myTurn
-                                , p1Point = gameData.common.p1Point
-                                , p2Point = gameData.common.p2Point
+                                , exchangeable = gameData.common.exchangeable
+                                , p1Stat = gameData.common.p1Stat
+                                , p2Stat = gameData.common.p2Stat
+                                , ended = gameData.common.ended
                             }
                     in
                         { model | game = game_ }
@@ -213,6 +219,19 @@ normalUpdate msg model =
             in
                 ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
 
+        Pass ->
+            let
+                reqBody =
+                    JE.list []
+
+                passEvent =
+                    "pass:" ++ model.game.items.deckId
+
+                ( phxSocket, phxCmd ) =
+                    Socket.push (patchItems passEvent model.gameId reqBody) model.phxSocket
+            in
+                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+
         Push ->
             let
                 reqBody =
@@ -251,7 +270,11 @@ normalUpdate msg model =
                             model.game.items
 
                         items_ =
-                            { items | deckId = gameData.deckId, myItems = gameData.myItems }
+                            { items
+                                | deckId = gameData.deckId
+                                , deckName = gameData.deckName
+                                , myItems = gameData.myItems
+                            }
 
                         newGame =
                             { game | items = items_ }
@@ -288,8 +311,10 @@ normalUpdate msg model =
                                 | items = items_
                                 , board = board_
                                 , myTurn = commonGameData.myTurn
-                                , p1Point = commonGameData.p1Point
-                                , p2Point = commonGameData.p2Point
+                                , exchangeable = commonGameData.exchangeable
+                                , p1Stat = commonGameData.p1Stat
+                                , p2Stat = commonGameData.p2Stat
+                                , ended = commonGameData.ended
                             }
                     in
                         { model | game = new_game } ! [ Cmd.none ]
@@ -317,7 +342,7 @@ normalUpdate msg model =
                             model.phxPresences |> Presence.syncDiff presenceState
 
                         players =
-                            Dict.keys newPresenceState |> List.map (\k -> Player k 0)
+                            Dict.keys newPresenceState |> List.map Player
                     in
                         ( { model | phxPresences = newPresenceState, players = players }, Cmd.none )
 
@@ -331,9 +356,7 @@ type alias DeckPresence =
 
 
 type alias Player =
-    { name : String
-    , point : Int
-    }
+    { name : String }
 
 
 deckPresenceDecoder : JD.Decoder DeckPresence
@@ -419,6 +442,128 @@ waiting a players =
         Nothing
 
 
+exchangeOrPass : Bool -> Msg -> Msg -> Html Msg
+exchangeOrPass exchangeable exchangeMsg passMsg =
+    let
+        ( msg, btnText ) =
+            if exchangeable then
+                ( exchangeMsg, "Exchange" )
+            else
+                ( passMsg, "Pass" )
+    in
+        a
+            [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
+            , onClick msg
+            ]
+            [ text btnText ]
+
+
+viewStat : Game.Model -> Html msg
+viewStat game =
+    let
+        hightLightMyscore : Item.Model -> String -> String
+        hightLightMyscore { deckName } deckName_ =
+            if deckName_ == deckName then
+                "blue ba b--blue pa3 mv3"
+            else
+                "white ba b--white pa3 mv3"
+
+        winOrLose : Item.Model -> String -> Html msg
+        winOrLose { deckName } deckName_ =
+            if deckName_ == deckName then
+                span [ class "green" ] [ text "You Win!" ]
+            else
+                span [ class "yellow" ] [ text "You Lose!" ]
+
+        statHeader : Item.Model -> String -> String
+        statHeader { deckName } deckName_ =
+            if deckName_ == deckName then
+                deckName_ ++ " (You)"
+            else
+                deckName_
+    in
+        section []
+            [ winOrLose game.items (winner game)
+            , div [ class <| hightLightMyscore game.items game.p1Stat.deckName ]
+                [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p1Stat.deckName ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p1Stat.point) ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 game.p1Stat.deckPoint) ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Toal = " ++ (toString <| game.p1Stat.point - (Maybe.withDefault 0 game.p1Stat.deckPoint)) ]
+                ]
+            , div [ class <| hightLightMyscore game.items game.p2Stat.deckName ]
+                [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p2Stat.deckName ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p2Stat.point) ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 game.p2Stat.deckPoint) ]
+                , p [ class "ma0 fw1 f6" ] [ text <| "Toal = " ++ (toString <| game.p2Stat.point - (Maybe.withDefault 0 game.p2Stat.deckPoint)) ]
+                ]
+            ]
+
+
+viewPlaying : Game.Model -> Html Msg
+viewPlaying game =
+    section []
+        [ section []
+            [ div []
+                [ span [ class "near-white" ] [ text <| game.p1Stat.deckName ++ ": " ]
+                , span [] [ text (toString game.p1Stat.point) ]
+                ]
+            , div []
+                [ span [ class "near-white" ] [ text <| game.p2Stat.deckName ++ ": " ]
+                , span [] [ text (toString game.p2Stat.point) ]
+                ]
+            ]
+        , section []
+            [ span [ class "blue" ]
+                [ text
+                    (if game.myTurn then
+                        "Playing .."
+                     else
+                        "Waiting .."
+                    )
+                ]
+            ]
+        , exchangeOrPass (game.exchangeable) Exchange Pass
+        , a
+            [ class "f6 link db ba pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
+            , onClick (beforeSubmit game)
+            ]
+            [ text "SUBMIT" ]
+        , a
+            [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
+            , onClick ResetGame
+            ]
+            [ text "Reset Game" ]
+        , a
+            [ class "f6 link db ba ph2 pv2 near-white dim pointer tc"
+            , onClick BatchRecall
+            ]
+            [ text "Recall" ]
+        ]
+
+
+winner : Game.Model -> String
+winner game =
+    let
+        p1Deck =
+            Maybe.withDefault 0 game.p1Stat.deckPoint
+
+        p2Deck =
+            Maybe.withDefault 0 game.p2Stat.deckPoint
+    in
+        if (game.p1Stat.point - p1Deck) > (game.p2Stat.point - p2Deck) then
+            game.p1Stat.deckName
+        else
+            game.p2Stat.deckName
+
+
+viewRightPanel : Game.Model -> Html Msg
+viewRightPanel game =
+    if game.ended then
+        viewStat game
+    else
+        viewPlaying game
+
+
 view : Model -> Html Msg
 view model =
     div [ class "flex flex-wrap flex-nowrap-l justify-center items-center items-stretch-m" ]
@@ -434,45 +579,6 @@ view model =
                 ]
             ]
         , section [ class "flex justify-between flex-auto flex-none-l self-end db-l mt3 mt0-l ml2-l mb5-l pb3-l" ]
-            [ section []
-                [ div []
-                    [ span [ class "near-white" ] [ text "P1: " ]
-                    , span [] [ text (toString model.game.p1Point) ]
-                    ]
-                , div []
-                    [ span [ class "near-white" ] [ text "P2: " ]
-                    , span [] [ text (toString model.game.p2Point) ]
-                    ]
-                ]
-            , section []
-                [ span [ class "blue" ]
-                    [ text
-                        (if model.game.myTurn then
-                            "Playing .."
-                         else
-                            "Waiting .."
-                        )
-                    ]
-                ]
-            , a
-                [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
-                , onClick Exchange
-                ]
-                [ text "Exchange" ]
-            , a
-                [ class "f6 link db ba pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
-                , onClick (beforeSubmit model.game)
-                ]
-                [ text "SUBMIT" ]
-            , a
-                [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
-                , onClick ResetGame
-                ]
-                [ text "Reset Game" ]
-            , a
-                [ class "f6 link db ba ph2 pv2 near-white dim pointer tc"
-                , onClick BatchRecall
-                ]
-                [ text "Recall" ]
+            [ viewRightPanel model.game
             ]
         ]

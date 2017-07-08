@@ -29,6 +29,9 @@ defmodule AMath.Web.GameRoomChannel do
   def handle_in("exchange:" <> deck_id, %{"items" => item_params}, socket) do
     update_game(socket, item_params, deck_id, &Game.update_exchange/3)
   end
+  def handle_in("pass:" <> deck_id, _params, socket) do
+    update_game(socket, [], deck_id, &Game.pass_turn/3)
+  end
   def handle_in(_, _, socket), do: {:noreply, socket}
   
   intercept ["presence_diff", "common_state"]
@@ -78,8 +81,9 @@ defmodule AMath.Web.GameRoomChannel do
   def update_game(socket, item_params, deck_id, func) when is_function(func, 3) do
     game = get_game(socket)
     deck = get_deck(game, verify_deck(deck_id))
-    
-    with {:ok, %Item{} = new_game} <- func.(game, item_params, deck.key),
+
+    with false <- Game.ended?(game.items),
+      {:ok, %Item{} = new_game} <- func.(game, item_params, deck.key),
       {:ok, new_game} <- Game.rotate_turn(new_game),
       %{id: _, key: _, items: _} = new_deck <- get_deck(new_game, deck.id)
     do
