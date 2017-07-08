@@ -121,17 +121,24 @@ hideMovedItem model =
 
 
 recallItem : Msg -> ( String, Int ) -> Model -> Result Model Model
-recallItem msg ( itemId, point ) model =
+recallItem msg ( itemStr, point ) model =
     case msg of
-        Put int ->
-            Ok
-                { model
-                    | myItems =
-                        model.myItems
-                            |> List.Extra.updateAt int
-                                (\item -> { item | item = itemId, point = point, moved = False })
-                            |> Maybe.withDefault model.myItems
-                }
+        Put targetIndex ->
+            let
+                selfIndex =
+                    List.Extra.findIndex (\item -> item.item == itemStr && item.moved) model.myItems
+                        |> Maybe.withDefault targetIndex
+            in
+                Ok
+                    { model
+                        | myItems =
+                            model.myItems
+                                |> List.Extra.swapAt selfIndex targetIndex
+                                |> Maybe.withDefault model.myItems
+                                |> List.Extra.updateAt targetIndex
+                                    (\item -> { item | item = itemStr, point = point, moved = False })
+                                |> Maybe.withDefault model.myItems
+                    }
 
         _ ->
             Err model
