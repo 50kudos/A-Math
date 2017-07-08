@@ -5,13 +5,16 @@ defmodule AMath.Game do
   import IEx
   import Ecto.{Query, Changeset}, warn: false
   alias AMath.Repo
-  alias AMath.Game.{Item, Data, Rule}
-
+  alias AMath.Game.{Item, Data, Rule, Board}
+  
+  @deck_size 8
+  @bingo_bonus 40
+  
   def create_item() do
     initial_data = AMath.Game.Intializer.sample()
     
-    with {:ok, game, p1_items} <- take_rest(initial_data, 8),
-      {:ok, game, p2_items} <- take_rest(game, 8)
+    with {:ok, game, p1_items} <- take_rest(initial_data, @deck_size),
+      {:ok, game, p2_items} <- take_rest(game, @deck_size)
     do
       game = game
       |> put_deck(:p1_deck, p1_items)
@@ -80,8 +83,8 @@ defmodule AMath.Game do
   def reset_game(id) do
     initial_data = AMath.Game.Intializer.sample()
     
-    with {:ok, game, p1_items} <- take_rest(initial_data, 8),
-      {:ok, game, p2_items} <- take_rest(game, 8)
+    with {:ok, game, p1_items} <- take_rest(initial_data, @deck_size),
+      {:ok, game, p2_items} <- take_rest(game, @deck_size)
     do
       game = game
       |> put_deck(:p1_deck, p1_items)
@@ -124,7 +127,7 @@ defmodule AMath.Game do
       {:ok,
         update_in(game, [:items, :boardItems], fn _ -> new_board end),
         Enum.count(staging_items),
-        Enum.reduce(cont_items, 0, fn (item,acc) -> item.point + acc end)
+        calculate_point(staging_items, cont_items)
       }
     else
       _ ->
@@ -252,6 +255,18 @@ defmodule AMath.Game do
     end
 
     {:ok, update_in(game, [:items, deck_key, :items], update_mine)}
+  end
+  
+  def calculate_point(staging_items, cont_items) do
+    staging_items = Data.board_map(staging_items)
+    const_board_items = MapSet.difference(MapSet.new(cont_items), MapSet.new(staging_items))
+
+    total_point = staging_items
+    |> Enum.reduce(0, fn (item,acc) -> Board.piece_point(item) + acc end)
+    |> Kernel.+(Enum.reduce(const_board_items, 0, fn (item,acc) -> item.point + acc end))
+    |> Kernel.*(Enum.reduce(staging_items, 1, fn (item,acc) -> Board.equation_mult(item) * acc end))
+    
+    if Enum.count(staging_items) == @deck_size, do: total_point + @bingo_bonus, else: total_point
   end
   
   def update_point(%{items: _} = game, point, deck_key) do

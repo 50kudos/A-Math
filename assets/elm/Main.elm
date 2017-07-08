@@ -544,9 +544,9 @@ viewPlaying game =
             [ span [ class "blue" ]
                 [ text
                     (if game.myTurn then
-                        "Playing .."
+                        "Your Turn"
                      else
-                        "Waiting .."
+                        "Opponent Turn"
                     )
                 ]
             ]
