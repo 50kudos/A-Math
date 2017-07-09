@@ -13,6 +13,7 @@ import Dict
 import Game
 import Board
 import Item
+import Draggable
 
 
 type alias Flags =
@@ -36,6 +37,10 @@ type alias Model =
     , phxSocket : Socket.Socket Msg
     , phxPresences : Presence.PresenceState DeckPresence
     }
+
+
+type alias Position =
+    { x : Float, y : Float }
 
 
 type Msg
@@ -114,7 +119,10 @@ normalUpdate msg model =
                     Game.update msg model.game
 
                 choices =
-                    List.drop 1 game.choices
+                    if Game.isDraging msg then
+                        game.choices
+                    else
+                        List.drop 1 game.choices
             in
                 case game.choices of
                     [] ->
@@ -412,7 +420,10 @@ beforeSubmit model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Socket.listen model.phxSocket PhoenixMsg
+    Sub.batch
+        [ Socket.listen model.phxSocket PhoenixMsg
+        , Draggable.subscriptions Game.DragMsg model.game.drag |> Sub.map GameMsg
+        ]
 
 
 viewCopyUrl : String -> Html msg

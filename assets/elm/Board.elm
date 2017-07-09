@@ -174,35 +174,33 @@ view choice model toMsg =
         desc p1 p2 p3 =
             div [ class "aspect-ratio--object flex flex-column justify-center" ]
                 [ Svg.svg [ SvgAttr.width "100%", SvgAttr.height "100%", SvgAttr.viewBox "0 0 21 21" ]
-                    [ Svg.g []
-                        [ Svg.text_
-                            [ SvgAttr.x "50%"
-                            , SvgAttr.y "3%"
-                            , SvgAttr.fill "darkslategrey"
-                            , SvgAttr.fontSize "5"
-                            , SvgAttr.textAnchor "middle"
-                            , SvgAttr.alignmentBaseline "hanging"
-                            ]
-                            [ Svg.text p1 ]
-                        , Svg.text_
-                            [ SvgAttr.x "50%"
-                            , SvgAttr.y "50%"
-                            , SvgAttr.fill "darkslategrey"
-                            , SvgAttr.fontSize "8"
-                            , SvgAttr.textAnchor "middle"
-                            , SvgAttr.alignmentBaseline "central"
-                            ]
-                            [ Svg.text p2 ]
-                        , Svg.text_
-                            [ SvgAttr.x "50%"
-                            , SvgAttr.y "95%"
-                            , SvgAttr.fill "darkslategrey"
-                            , SvgAttr.fontSize "5"
-                            , SvgAttr.textAnchor "middle"
-                            , SvgAttr.alignmentBaseline "baseline"
-                            ]
-                            [ Svg.text p3 ]
+                    [ Svg.text_
+                        [ SvgAttr.x "50%"
+                        , SvgAttr.y "1%"
+                        , SvgAttr.fill "darkslategrey"
+                        , SvgAttr.fontSize "5"
+                        , SvgAttr.textAnchor "middle"
+                        , SvgAttr.dominantBaseline "hanging"
                         ]
+                        [ Svg.text p1 ]
+                    , Svg.text_
+                        [ SvgAttr.x "50%"
+                        , SvgAttr.y "51%"
+                        , SvgAttr.fill "darkslategrey"
+                        , SvgAttr.fontSize "8"
+                        , SvgAttr.textAnchor "middle"
+                        , SvgAttr.dominantBaseline "central"
+                        ]
+                        [ Svg.text p2 ]
+                    , Svg.text_
+                        [ SvgAttr.x "50%"
+                        , SvgAttr.y "95%"
+                        , SvgAttr.fill "darkslategrey"
+                        , SvgAttr.fontSize "5"
+                        , SvgAttr.textAnchor "middle"
+                        , SvgAttr.dominantBaseline "no-change"
+                        ]
+                        [ Svg.text p3 ]
                     ]
                 ]
 
@@ -210,7 +208,7 @@ view choice model toMsg =
         viewItem itemHtml point =
             div [ class "aspect-ratio--object flex flex-column justify-center ph1" ]
                 [ p [ class "db ma0 f7 f4-m f5-l helvetica lh-solid" ] [ itemHtml ]
-                , sub [ class "f9 fw1 moon-gray self-end" ] [ text (toString point) ]
+                , sub [ class "f8 fw1 moon-gray self-end" ] [ text (toString point) ]
                 ]
 
         viewSlot : Int -> Int -> Multiplier -> Html Msg

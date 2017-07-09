@@ -23,6 +23,7 @@ import Html.Events exposing (onClick)
 import Json.Decode as JD
 import List.Extra
 import Helper as H
+import Draggable
 
 
 type alias Model =
@@ -198,8 +199,8 @@ itemChoices { restItems } =
         |> List.map .item
 
 
-viewChoices : (String -> msg) -> List String -> Html msg
-viewChoices msg listA =
+viewChoices : (String -> msg) -> (Draggable.Msg () -> msg) -> String -> List String -> Html msg
+viewChoices msg dragMsg translate listA =
     let
         shortChoices : String -> Html msg
         shortChoices item =
@@ -220,20 +221,26 @@ viewChoices msg listA =
         case List.length listA of
             2 ->
                 div
-                    [ class <|
+                    ([ class <|
                         "flex justify-center justify-start-ns flex-wrap absolute mw6 "
                             ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                    , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
-                    ]
+                     , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
+                     , Draggable.mouseTrigger () dragMsg
+                     ]
+                        ++ (Draggable.touchTriggers () dragMsg)
+                    )
                     (List.map shortChoices listA)
 
             26 ->
                 div
-                    [ class <|
-                        "flex justify-center justify-start-ns flex-wrap absolute "
+                    ([ class <|
+                        "flex justify-center flex-wrap absolute w5 "
                             ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                    , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
-                    ]
+                     , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
+                     , Draggable.mouseTrigger () dragMsg
+                     ]
+                        ++ (Draggable.touchTriggers () dragMsg)
+                    )
                     (List.map longChoices listA)
 
             _ ->

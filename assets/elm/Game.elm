@@ -4,6 +4,7 @@ import Item
 import Board
 import Html exposing (Html, div, map, section, button, a, text)
 import Json.Decode as JD
+import Draggable
 
 
 type alias Model =
@@ -15,7 +16,13 @@ type alias Model =
     , p1Stat : PlayerStat
     , p2Stat : PlayerStat
     , endStatus : EndStatus
+    , xy : Position
+    , drag : Draggable.State ()
     }
+
+
+type alias Position =
+    { x : Float, y : Float }
 
 
 type alias PlayerStat =
@@ -27,6 +34,8 @@ type alias PlayerStat =
 
 type Msg
     = SelectChoice Int Int String
+    | OnDragBy Draggable.Delta
+    | DragMsg (Draggable.Msg ())
 
 
 type EndStatus
@@ -61,7 +70,14 @@ init =
     , p1Stat = PlayerStat "" 0 Nothing
     , p2Stat = PlayerStat "" 0 Nothing
     , endStatus = Running
+    , xy = Position -128 -69
+    , drag = Draggable.init
     }
+
+
+dragConfig : Draggable.Config () Msg
+dragConfig =
+    Draggable.basicConfig OnDragBy
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -69,6 +85,27 @@ update msg model =
     case msg of
         SelectChoice i j item ->
             { model | board = Board.markChoice i j item model.board } ! [ Cmd.none ]
+
+        OnDragBy ( dx, dy ) ->
+            ( { model | xy = Position (model.xy.x + dx) (model.xy.y + dy) }
+            , Cmd.none
+            )
+
+        DragMsg dragMsg ->
+            Draggable.update dragConfig dragMsg model
+
+
+isDraging : Msg -> Bool
+isDraging msg =
+    case msg of
+        OnDragBy _ ->
+            True
+
+        DragMsg _ ->
+            True
+
+        _ ->
+            False
 
 
 updateItems : Item.Msg -> Model -> Model
@@ -132,18 +169,22 @@ viewChoiceFor : Maybe ( String, Int, Int ) -> Model -> Html Msg
 viewChoiceFor position model =
     case position of
         Just ( item, i, j ) ->
-            case item of
-                "blank" ->
-                    Item.viewChoices (SelectChoice i j) (Item.itemChoices model.items)
+            let
+                translate =
+                    "translate(" ++ (toString model.xy.x) ++ "px, " ++ (toString model.xy.y) ++ "px)"
+            in
+                case item of
+                    "blank" ->
+                        Item.viewChoices (SelectChoice i j) DragMsg translate (Item.itemChoices model.items)
 
-                "+/-" ->
-                    Item.viewChoices (SelectChoice i j) [ "+", "-" ]
+                    "+/-" ->
+                        Item.viewChoices (SelectChoice i j) DragMsg translate [ "+", "-" ]
 
-                "x/÷" ->
-                    Item.viewChoices (SelectChoice i j) [ "x", "÷" ]
+                    "x/÷" ->
+                        Item.viewChoices (SelectChoice i j) DragMsg translate [ "x", "÷" ]
 
-                _ ->
-                    Debug.crash "Unexpected selectable item occurs."
+                    _ ->
+                        Debug.crash "Unexpected selectable item occurs."
 
         Nothing ->
             text ""
