@@ -1,5 +1,8 @@
 module Helper exposing (..)
 
+import Html exposing (Html, text, span, div)
+import Html.Attributes exposing (class)
+
 
 colorByPick : { a | picked : Bool } -> String
 colorByPick item =
@@ -9,43 +12,69 @@ colorByPick item =
         " bg-dark-blue light-gray "
 
 
+colorByPickStaging : { a | picked : Bool } -> String
+colorByPickStaging item =
+    if .picked item then
+        " bg-light-gray dark-blue "
+    else
+        " bg-dark-green light-gray b--dark-green "
+
+
 isAtIndex : Int -> Int -> { a | i : Int, j : Int } -> Bool
 isAtIndex i j aIndex =
     aIndex.i == i && aIndex.j == j
 
 
-cast : String -> String
+cast : String -> Html msg
 cast string =
     if string == "blank" then
-        ""
+        text ""
     else
-        string
+        text string
 
 
-castChoice : String -> String -> String
+castChoice : String -> String -> Html msg
 castChoice item value =
     case item of
         "blank" ->
-            value
+            span [ class "orange" ] [ text value ]
 
         "+/-" ->
-            value
+            if value == "+" then
+                div [ class "f7 f5-ns" ]
+                    [ span [ class "orange" ] [ text "+" ]
+                    , span [] [ text "|-" ]
+                    ]
+            else
+                div [ class "f7 f5-ns" ]
+                    [ span [] [ text "+|" ]
+                    , span [ class "orange" ] [ text "-" ]
+                    ]
 
         "x/÷" ->
-            value
+            if value == "x" then
+                div [ class "f7 f5-ns" ]
+                    [ span [ class "orange" ] [ text "x" ]
+                    , span [] [ text "|÷" ]
+                    ]
+            else
+                div [ class "f7 f5-ns" ]
+                    [ span [] [ text "x|" ]
+                    , span [ class "orange" ] [ text "÷" ]
+                    ]
 
         _ ->
-            item
+            text item
 
 
-slotHeighlight : a -> b -> Maybe ( x, a, b ) -> String
-slotHeighlight i j aMaybe =
+slotHighlight : a -> b -> Maybe ( x, a, b ) -> String -> String
+slotHighlight i j aMaybe default =
     case aMaybe of
         Just ( _, i_, j_ ) ->
             if i_ == i && j_ == j then
-                " b--light-yellow bg-dark-gray "
+                " light-yellow b--light-yellow bg-dark-gray "
             else
-                " b--dark-blue "
+                default
 
         Nothing ->
-            " b--dark-blue "
+            default

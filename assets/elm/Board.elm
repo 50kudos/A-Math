@@ -21,6 +21,8 @@ import Json.Decode as JD
 import Json.Encode as JE
 import List.Extra
 import Helper as H
+import Svg
+import Svg.Attributes as SvgAttr
 
 
 type alias Model =
@@ -163,7 +165,7 @@ view choice model toMsg =
         slot : Msg -> String -> List (Html Msg) -> Html Msg
         slot msg colour body =
             div
-                [ class <| colour ++ " dtc tc ba b--silver"
+                [ class <| "dtc tc ba b--silver " ++ colour
                 , onClick msg
                 ]
                 [ div [ class "aspect-ratio aspect-ratio--1x1" ] body ]
@@ -171,23 +173,58 @@ view choice model toMsg =
         desc : String -> String -> String -> Html Msg
         desc p1 p2 p3 =
             div [ class "aspect-ratio--object flex flex-column justify-center" ]
-                [ p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p1 ]
-                , p [ class "db ma0 f7 f5-ns lh-solid" ] [ text p2 ]
-                , p [ class "dn db-ns ma0 f8 lh-solid" ] [ text p3 ]
+                [ Svg.svg [ SvgAttr.width "100%", SvgAttr.height "100%", SvgAttr.viewBox "0 0 21 21" ]
+                    [ Svg.g []
+                        [ Svg.text_
+                            [ SvgAttr.x "50%"
+                            , SvgAttr.y "3%"
+                            , SvgAttr.fill "darkslategrey"
+                            , SvgAttr.fontSize "5"
+                            , SvgAttr.textAnchor "middle"
+                            , SvgAttr.alignmentBaseline "hanging"
+                            ]
+                            [ Svg.text p1 ]
+                        , Svg.text_
+                            [ SvgAttr.x "50%"
+                            , SvgAttr.y "50%"
+                            , SvgAttr.fill "darkslategrey"
+                            , SvgAttr.fontSize "8"
+                            , SvgAttr.textAnchor "middle"
+                            , SvgAttr.alignmentBaseline "central"
+                            ]
+                            [ Svg.text p2 ]
+                        , Svg.text_
+                            [ SvgAttr.x "50%"
+                            , SvgAttr.y "95%"
+                            , SvgAttr.fill "darkslategrey"
+                            , SvgAttr.fontSize "5"
+                            , SvgAttr.textAnchor "middle"
+                            , SvgAttr.alignmentBaseline "baseline"
+                            ]
+                            [ Svg.text p3 ]
+                        ]
+                    ]
+                ]
+
+        viewItem : Html Msg -> Int -> Html Msg
+        viewItem itemHtml point =
+            div [ class "aspect-ratio--object flex flex-column justify-center ph1" ]
+                [ p [ class "db ma0 f7 f4-m f5-l helvetica lh-solid" ] [ itemHtml ]
+                , sub [ class "f9 fw1 moon-gray self-end" ] [ text (toString point) ]
                 ]
 
         viewSlot : Int -> Int -> Multiplier -> Html Msg
         viewSlot i j multiplier =
             case List.Extra.find (H.isAtIndex i j) model.committedItems of
                 Just item ->
-                    slot Nope "bg-dark-blue br2 light-gray b--black-0125" [ desc "" (H.castChoice item.item item.value) "" ]
+                    slot Nope "bg-dark-blue br2 light-gray b--black-0125" [ viewItem (H.castChoice item.item item.value) item.point ]
 
                 Nothing ->
                     case List.Extra.find (H.isAtIndex i j) model.stagingItems of
                         Just item ->
                             slot (Pick item)
-                                ((H.colorByPick item) ++ "pointer" ++ (H.slotHeighlight i j choice))
-                                [ desc "" (H.cast item.item) "" ]
+                                ("pointer" ++ (H.slotHighlight i j choice (H.colorByPickStaging item)))
+                                [ viewItem (H.cast item.item) item.point ]
 
                         Nothing ->
                             case multiplier of

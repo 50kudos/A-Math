@@ -163,7 +163,7 @@ myItems { myItems } toMsg =
                             ++ H.colorByPick item
                     , onClick (Pick nth)
                     ]
-                    [ span [] [ text (H.cast item.item) ]
+                    [ span [] [ H.cast item.item ]
                     , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]
                     ]
 
@@ -183,7 +183,7 @@ restItems { restItems } =
         tile item =
             div [ class "ma1 flex justify-center items-center" ]
                 [ div [ class "ba b--dark-blue blue w2 h2 flex justify-center items-center" ]
-                    [ text (H.cast item.item) ]
+                    [ H.cast item.item ]
                 , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
                 ]
     in
@@ -201,18 +201,40 @@ itemChoices { restItems } =
 viewChoices : (String -> msg) -> List String -> Html msg
 viewChoices msg listA =
     let
-        numPad : String -> Html msg
-        numPad item =
+        shortChoices : String -> Html msg
+        shortChoices item =
             span
                 [ class "flex items-center justify-center w2 h2 pa1 ba b--light-yellow light-yellow pointer f3 ma3"
                 , onClick (msg item)
                 ]
                 [ text item ]
+
+        longChoices : String -> Html msg
+        longChoices item =
+            span
+                [ class "flex items-center justify-center w1 h1 pa2 ba b--light-yellow light-yellow pointer f4 ma0"
+                , onClick (msg item)
+                ]
+                [ text item ]
     in
-        div
-            [ class <|
-                "flex justify-center justify-start-ns flex-wrap absolute mw6 "
-                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-            , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
-            ]
-            (List.map numPad listA)
+        case List.length listA of
+            2 ->
+                div
+                    [ class <|
+                        "flex justify-center justify-start-ns flex-wrap absolute mw6 "
+                            ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
+                    , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
+                    ]
+                    (List.map shortChoices listA)
+
+            26 ->
+                div
+                    [ class <|
+                        "flex justify-center justify-start-ns flex-wrap absolute "
+                            ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
+                    , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", "translateX(-50%) translateY(-50%)" ) ]
+                    ]
+                    (List.map longChoices listA)
+
+            _ ->
+                Debug.log "Unexpected list of choices" <| text (toString listA)
