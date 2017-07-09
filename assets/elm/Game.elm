@@ -5,6 +5,7 @@ import Board
 import Html exposing (Html, div, map, section, button, a, text)
 import Json.Decode as JD
 import Draggable
+import Draggable.Events exposing (onDragBy, onDragStart)
 
 
 type alias Model =
@@ -17,7 +18,7 @@ type alias Model =
     , p2Stat : PlayerStat
     , endStatus : EndStatus
     , xy : Position
-    , drag : Draggable.State ()
+    , drag : Draggable.State Position
     }
 
 
@@ -35,7 +36,8 @@ type alias PlayerStat =
 type Msg
     = SelectChoice Int Int String
     | OnDragBy Draggable.Delta
-    | DragMsg (Draggable.Msg ())
+    | StartDragging Position
+    | DragMsg (Draggable.Msg Position)
 
 
 type EndStatus
@@ -70,14 +72,17 @@ init =
     , p1Stat = PlayerStat "" 0 Nothing
     , p2Stat = PlayerStat "" 0 Nothing
     , endStatus = Running
-    , xy = Position -128 -69
+    , xy = Position -1 -1
     , drag = Draggable.init
     }
 
 
-dragConfig : Draggable.Config () Msg
+dragConfig : Draggable.Config Position Msg
 dragConfig =
-    Draggable.basicConfig OnDragBy
+    Draggable.customConfig
+        [ onDragBy OnDragBy
+        , onDragStart StartDragging
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -85,6 +90,9 @@ update msg model =
     case msg of
         SelectChoice i j item ->
             { model | board = Board.markChoice i j item model.board } ! [ Cmd.none ]
+
+        StartDragging initialPosition ->
+            { model | xy = Debug.log "initialPosition" initialPosition } ! [ Cmd.none ]
 
         OnDragBy ( dx, dy ) ->
             ( { model | xy = Position (model.xy.x + dx) (model.xy.y + dy) }
@@ -99,6 +107,9 @@ isDraging : Msg -> Bool
 isDraging msg =
     case msg of
         OnDragBy _ ->
+            True
+
+        StartDragging _ ->
             True
 
         DragMsg _ ->
@@ -170,18 +181,25 @@ viewChoiceFor position model =
     case position of
         Just ( item, i, j ) ->
             let
-                translate =
-                    "translate(" ++ (toString model.xy.x) ++ "px, " ++ (toString model.xy.y) ++ "px)"
+                translate : String -> String
+                translate choiceType =
+                    if model.xy == (Position -1 -1) then
+                        if choiceType == "blank" then
+                            "translate(-128px, -69px)"
+                        else
+                            "translate(-75px, -38px)"
+                    else
+                        "translate(" ++ (toString model.xy.x) ++ "px, " ++ (toString model.xy.y) ++ "px)"
             in
                 case item of
                     "blank" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg translate (Item.itemChoices model.items)
+                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) (Item.itemChoices model.items)
 
                     "+/-" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg translate [ "+", "-" ]
+                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) [ "+", "-" ]
 
                     "x/÷" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg translate [ "x", "÷" ]
+                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) [ "x", "÷" ]
 
                     _ ->
                         Debug.crash "Unexpected selectable item occurs."

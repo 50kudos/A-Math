@@ -203,7 +203,7 @@ itemChoices { restItems } =
         |> List.map .item
 
 
-viewChoices : (String -> msg) -> (Draggable.Msg () -> msg) -> String -> List String -> Html msg
+viewChoices : (String -> msg) -> (Draggable.Msg { x : Float, y : Float } -> msg) -> String -> List String -> Html msg
 viewChoices msg dragMsg translate listA =
     let
         shortChoices : String -> Html msg
@@ -229,9 +229,9 @@ viewChoices msg dragMsg translate listA =
                         "flex justify-center justify-start-ns flex-wrap absolute mw6 "
                             ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
                      , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                     , Draggable.mouseTrigger () dragMsg
+                     , Draggable.mouseTrigger { x = -75, y = -38 } dragMsg
                      ]
-                        ++ (Draggable.touchTriggers () dragMsg)
+                        ++ (Draggable.touchTriggers { x = -75, y = -38 } dragMsg)
                     )
                     (List.map shortChoices listA)
 
@@ -241,9 +241,9 @@ viewChoices msg dragMsg translate listA =
                         "flex justify-center flex-wrap absolute w5 "
                             ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
                      , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                     , Draggable.mouseTrigger () dragMsg
+                     , Draggable.mouseTrigger { x = -128, y = -69 } dragMsg
                      ]
-                        ++ (Draggable.touchTriggers () dragMsg)
+                        ++ (Draggable.touchTriggers { x = -128, y = -69 } dragMsg)
                     )
                     (List.map longChoices listA)
 
