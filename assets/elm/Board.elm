@@ -211,6 +211,11 @@ view choice model toMsg =
                 , sub [ class "f8 fw1 moon-gray self-end" ] [ text (toString point) ]
                 ]
 
+        starSlot : Html Msg
+        starSlot =
+            div [ class "aspect-ratio--object flex flex-column justify-center" ]
+                [ span [ class "db ma0 f7 f5-m f4-l helvetica lh-solid dark-blue" ] [ text "★" ] ]
+
         viewSlot : Int -> Int -> Multiplier -> Html Msg
         viewSlot i j multiplier =
             case List.Extra.find (H.isAtIndex i j) model.committedItems of
@@ -242,7 +247,7 @@ view choice model toMsg =
                                     slot (Put i j) "bg-gray2 dark-gray" []
 
                                 X_ ->
-                                    slot (Put i j) "bg-mid-gray2 dark-gray" []
+                                    slot (Put i j) "bg-blue" [ starSlot ]
 
         row : Int -> List Multiplier -> Html Msg
         row i cols =

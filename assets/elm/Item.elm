@@ -49,7 +49,11 @@ type Msg
 
 init : Model
 init =
-    Model "" "" [] []
+    { deckId = ""
+    , deckName = ""
+    , myItems = List.repeat 8 <| DeckItem "" 0 False False
+    , restItems = List.repeat 29 <| RestItem "" 0
+    }
 
 
 restItemsDecoder : JD.Decoder RestItem
@@ -173,7 +177,7 @@ myItems { myItems } toMsg =
             div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
         List.indexedMap tile myItems
-            |> div [ class "flex justify-center items-center flex-auto" ]
+            |> div [ class "flex justify-center items-center flex-auto h2" ]
             |> map toMsg
 
 
