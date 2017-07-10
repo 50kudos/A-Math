@@ -3,6 +3,7 @@ module Main exposing (main)
 import Html exposing (Html, map, div, a, text, section, input, label, small, span, p)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class, defaultValue, type_, autofocus, for, id, readonly)
+import Helper as H
 import Phoenix.Socket as Socket
 import Phoenix.Channel as Channel
 import Phoenix.Push as Pusher
@@ -428,9 +429,10 @@ subscriptions model =
 
 viewCopyUrl : String -> Html msg
 viewCopyUrl gameId =
-    div [ class "fixed z-9999 h-100 w-100 flex items-center justify-center light-gray bg-black-70" ]
+    div [ class "fixed z-9999 h-100 w-100 flex items-center justify-center light-gray bg-white-70" ]
         [ div [ class "w-90 w-50-l" ]
-            [ label [ for "game_url", class "f4 db mb2" ] [ text "Game room url" ]
+            [ label [ for "game_url", class "f4 db mb2 black" ] [ text "Game room link" ]
+            , small [ class "f6 black-80 db mb2" ] [ text "To start the game, copy and send the link below to your friend!" ]
             , input
                 [ type_ "url"
                 , readonly True
@@ -440,7 +442,7 @@ viewCopyUrl gameId =
                 , defaultValue ("http://localhost:4000/game/" ++ gameId)
                 ]
                 []
-            , small [ class "f6 white-80 db mb2" ] [ text "To play the game, copy and send the url to your friend!" ]
+            , small [ class "f7 black-80 db mb2" ] [ text "Your friend have not been joined the game or they are disconnected." ]
             ]
         ]
 
@@ -453,8 +455,8 @@ waiting a players =
         Nothing
 
 
-exchangeOrPass : Bool -> Msg -> Msg -> Html Msg
-exchangeOrPass exchangeable exchangeMsg passMsg =
+exchangeOrPass : Bool -> Bool -> Msg -> Msg -> Html Msg
+exchangeOrPass myTurn exchangeable exchangeMsg passMsg =
     let
         ( msg, btnText ) =
             if exchangeable then
@@ -463,7 +465,7 @@ exchangeOrPass exchangeable exchangeMsg passMsg =
                 ( passMsg, "Pass" )
     in
         a
-            [ class "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
+            [ class (H.exchangeButtonClass myTurn)
             , onClick msg
             ]
             [ text btnText ]
@@ -472,111 +474,120 @@ exchangeOrPass exchangeable exchangeMsg passMsg =
 viewStat : Game.Model -> Game.EndStatus -> Html msg
 viewStat game endStatus =
     let
-        hightLightMyscore : Item.Model -> String -> String
-        hightLightMyscore { deckName } deckName_ =
-            if deckName_ == deckName then
-                "blue ba b--blue pa3 mv3"
-            else
-                "white ba b--white pa3 mv3"
-
-        winOrLose : Item.Model -> String -> Html msg
-        winOrLose { deckName } deckName_ =
-            if deckName_ == deckName then
-                span [ class "green" ] [ text "You Win!" ]
-            else
-                span [ class "yellow" ] [ text "You Lose!" ]
-
-        statHeader : Item.Model -> String -> String
-        statHeader { deckName } deckName_ =
-            if deckName_ == deckName then
-                deckName_ ++ " (You)"
-            else
-                deckName_
+        winOrLose : String -> String -> String -> Html msg
+        winOrLose myDeckName playerDeckname winnerDeckName =
+            let
+                ( text_, cssClass ) =
+                    if myDeckName == winnerDeckName then
+                        if myDeckName == playerDeckname then
+                            ( "YOU WIN!", "bg-blue near-white" )
+                        else
+                            ( "DUDE", "bg-near-white mid-gray" )
+                    else if myDeckName == playerDeckname then
+                        ( "YOU LOSE!", "bg-blue near-white" )
+                    else
+                        ( "DUDE", "bg-near-white mid-gray" )
+            in
+                span [ class <| cssClass ++ " f6 pa2 tc br2 br--bottom" ]
+                    [ text text_ ]
 
         passingEndDetail : Int -> Maybe Int -> List (Html msg)
         passingEndDetail point deckPoint =
-            [ p [ class "ma0 fw1 f6" ]
-                [ text <| "Deck = -" ++ (toString <| Maybe.withDefault 0 deckPoint) ]
-            , p
-                [ class "ma0 fw1 f6" ]
-                [ text <| "Toal = " ++ (toString <| point - (Maybe.withDefault 0 deckPoint)) ]
+            [ p [ class "ma0 fw1 f7 blue" ]
+                [ text <| "Point = " ++ (toString point) ]
+            , p [ class "ma0 fw1 f7 blue" ]
+                [ text <| "Deck -" ++ (toString <| Maybe.withDefault 0 deckPoint) ]
+            , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
+                [ text (toString <| point - Maybe.withDefault 0 deckPoint) ]
             ]
 
         deckEndDetail : Int -> Maybe Int -> List (Html msg)
         deckEndDetail point opDeckPoint =
-            [ p [ class "ma0 fw1 f6" ]
-                [ text <| "Opponent Deck = +" ++ (toString <| Maybe.withDefault 0 opDeckPoint) ]
-            , p
-                [ class "ma0 fw1 f6" ]
-                [ text <| "Toal = " ++ (toString <| point + (Maybe.withDefault 0 opDeckPoint)) ]
+            [ p [ class "ma0 fw1 f7 blue" ]
+                [ text <| "Point = " ++ (toString point) ]
+            , p [ class "ma0 fw1 f7 blue" ]
+                [ text <| "Bonus +" ++ (toString <| Maybe.withDefault 0 opDeckPoint) ]
+            , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
+                [ text (toString <| point + Maybe.withDefault 0 opDeckPoint) ]
             ]
 
-        endingDetail : Game.EndStatus -> { x | point : Int, deckPoint : Maybe Int } -> { y | point : Int, deckPoint : Maybe Int } -> List (Html msg)
+        endingDetail : Game.EndStatus -> { x | point : Int, deckPoint : Maybe Int } -> { y | point : Int, deckPoint : Maybe Int } -> Html msg
         endingDetail endStatus aStat bStat =
             case endStatus of
                 Game.PassingEnded ->
-                    passingEndDetail aStat.point aStat.deckPoint
+                    div [ class "pa2" ] (passingEndDetail aStat.point aStat.deckPoint)
 
                 Game.DeckEnded ->
-                    deckEndDetail aStat.point bStat.deckPoint
+                    div [ class "pa2" ] (deckEndDetail aStat.point bStat.deckPoint)
 
                 a ->
-                    Debug.log "Unexpected game ending status" [ text (toString a) ]
+                    Debug.log "Unexpected game ending status" text (toString a)
     in
         section []
-            [ winOrLose game.items (winner game)
-            , div [ class <| hightLightMyscore game.items game.p1Stat.deckName ] <|
-                [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p1Stat.deckName ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p1Stat.point) ]
+            [ div [ class "flex flex-column w4 ba b--gray br2 mv4" ] <|
+                [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+                    [ text game.p1Stat.deckName ]
+                , endingDetail game.endStatus game.p1Stat game.p2Stat
+                , winOrLose game.items.deckName game.p1Stat.deckName (winner game)
                 ]
-                    ++ (endingDetail game.endStatus game.p1Stat game.p2Stat)
-            , div [ class <| hightLightMyscore game.items game.p2Stat.deckName ] <|
-                [ p [ class "ma0 mb2" ] [ text <| statHeader game.items game.p2Stat.deckName ]
-                , p [ class "ma0 fw1 f6" ] [ text <| "Point = " ++ (toString game.p2Stat.point) ]
+            , div [ class "flex flex-column w4 ba b--gray br2 mv4" ] <|
+                [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+                    [ text game.p2Stat.deckName ]
+                , endingDetail game.endStatus game.p2Stat game.p1Stat
+                , winOrLose game.items.deckName game.p2Stat.deckName (winner game)
                 ]
-                    ++ (endingDetail game.endStatus game.p2Stat game.p1Stat)
             ]
+
+
+turnStatus : Bool -> Item.Model -> String -> Html Msg
+turnStatus myTurn myDeck deckName =
+    if myTurn then
+        if myDeck.deckName == deckName then
+            span [ class "f6 pa2 tc bg-blue near-white br2 br--bottom" ]
+                [ text "Your turn" ]
+        else
+            span [ class "f6 pa2 tc bg-near-white mid-gray br2 br--bottom" ]
+                [ text "DUDE" ]
+    else if myDeck.deckName == deckName then
+        span [ class "f6 pa2 tc bg-near-white mid-gray br2 br--bottom" ]
+            [ text "YOU" ]
+    else
+        span [ class "f7 pv2 ph1 tc bg-blue near-white br2 br--bottom" ]
+            [ text "Dude is thinking .." ]
 
 
 viewPlaying : Game.Model -> Html Msg
 viewPlaying game =
     section []
-        [ section []
-            [ div []
-                [ span [ class "near-white" ] [ text <| game.p1Stat.deckName ++ ": " ]
-                , span [] [ text (toString game.p1Stat.point) ]
+        [ section [ class "mb5-l" ]
+            [ div [ class "flex flex-column h4 ba b--gray br2 mv4" ]
+                [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
+                    [ text game.p1Stat.deckName ]
+                , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
+                    [ text (toString game.p1Stat.point) ]
+                , turnStatus game.myTurn game.items game.p1Stat.deckName
                 ]
-            , div []
-                [ span [ class "near-white" ] [ text <| game.p2Stat.deckName ++ ": " ]
-                , span [] [ text (toString game.p2Stat.point) ]
+            , div [ class "flex flex-column h4 ba b--gray br2 mv4" ]
+                [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
+                    [ text game.p2Stat.deckName ]
+                , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
+                    [ text (toString game.p2Stat.point) ]
+                , turnStatus game.myTurn game.items game.p2Stat.deckName
                 ]
             ]
         , section []
-            [ span [ class "blue" ]
-                [ text
-                    (if game.myTurn then
-                        "Your Turn"
-                     else
-                        "Opponent Turn"
-                    )
+            [ exchangeOrPass game.myTurn game.exchangeable Exchange Pass
+            , a
+                [ class (H.submitButtonClass game.myTurn)
+                , onClick (beforeSubmit game)
                 ]
+                [ text "SUBMIT" ]
+            , a
+                [ class (H.recallButtonClass game.myTurn)
+                , onClick BatchRecall
+                ]
+                [ text "Recall" ]
             ]
-        , exchangeOrPass (game.exchangeable) Exchange Pass
-        , a
-            [ class "f6 link db ba pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
-            , onClick (beforeSubmit game)
-            ]
-            [ text "SUBMIT" ]
-        , a
-            [ class "dn f6 link ba ph2 pv2 near-white tc pointer"
-            , onClick ResetGame
-            ]
-            [ text "Reset Game" ]
-        , a
-            [ class "f6 link db ba ph2 pv2 near-white dim pointer tc"
-            , onClick BatchRecall
-            ]
-            [ text "Recall" ]
         ]
 
 
@@ -622,7 +633,7 @@ view model =
                 [ Item.myItems model.game.items ItemMsg
                 ]
             ]
-        , section [ class "flex justify-between flex-auto flex-none-l self-end db-l mt3 mt0-l ml2-l mb5-l pb3-l" ]
+        , section [ class "flex justify-between flex-auto flex-none-l self-end db-l w4 pa2 mt3 mt0-l ml2-l mb5-l pb3-l" ]
             [ viewRightPanel model.game
             ]
         ]

@@ -78,3 +78,27 @@ slotHighlight i j aMaybe default =
 
         Nothing ->
             default
+
+
+submitButtonClass : Bool -> String
+submitButtonClass enabled =
+    if enabled then
+        "mv2 f6 link db pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
+    else
+        "mv2 f6 link db pv2 pa4-l dark-gray tc bg-gray flex-auto"
+
+
+exchangeButtonClass : Bool -> String
+exchangeButtonClass enabled =
+    if enabled then
+        "f6 link db ba b--blue blue ph2 pv2 tc pointer hover-bg-light-blue hover-dark-blue"
+    else
+        "f6 link db ba b--gray gray ph2 pv2 tc"
+
+
+recallButtonClass : Bool -> String
+recallButtonClass enabled =
+    if enabled then
+        "f6 link db ba ph2 pv2 near-white dim pointer tc"
+    else
+        "f6 link db ba ph2 pv2 gray  tc"
