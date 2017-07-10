@@ -155,6 +155,8 @@ defmodule AMath.Game.Rule do
       case expr do
         [_] ->
           true
+        ["=", "-"] ->
+          true
         ["0","0"] ->
           false
         [a,b] ->
