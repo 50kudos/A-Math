@@ -9,7 +9,7 @@ defmodule AMath.Web.ItemView do
     %{data: render_many(items, ItemView, "item.json")}
   end
 
-  def render("show.json", %{state: data, deck: deck}) do
+  def render("show.json", %{state: _data, deck: deck}) do
     %{
       deckId: Phoenix.Token.sign(Endpoint, "The north remembers", deck.id),
       deckName: deck_name(deck.id),
@@ -59,17 +59,19 @@ defmodule AMath.Web.ItemView do
     p1_stat = %{deckName: deck_name(data.p1_deck.id), point: data.p1_deck.point}
 
     if Game.ended_status(data) != :running do
-      p1_stat = Map.merge(p1_stat, %{deckPoint: items_point(data.p1_deck.items)})
+      Map.merge(p1_stat, %{deckPoint: items_point(data.p1_deck.items)})
+    else
+      p1_stat
     end
-    p1_stat
   end
   defp player_stat(:p2Stat, data) do
     p2_stat = %{deckName: deck_name(data.p2_deck.id), point: data.p2_deck.point}
 
     if Game.ended_status(data) != :running do
-      p2_stat = Map.merge(p2_stat, %{deckPoint: items_point(data.p2_deck.items)})
+      Map.merge(p2_stat, %{deckPoint: items_point(data.p2_deck.items)})
+    else
+      p2_stat
     end
-    p2_stat
   end
   
   defp items_point(items) do

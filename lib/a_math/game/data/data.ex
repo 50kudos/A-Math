@@ -1,6 +1,6 @@
 defmodule AMath.Game.Data do
   use Ecto.Schema
-  import IEx
+
   import Ecto.Changeset, warn: false
   alias AMath.Game.Item
   alias AMath.Game.Data.Deck

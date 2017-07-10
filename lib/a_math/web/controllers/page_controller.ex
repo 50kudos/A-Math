@@ -2,7 +2,7 @@ defmodule AMath.Web.PageController do
   use AMath.Web, :controller
   alias AMath.Game
   alias AMath.Game.Item
-  import IEx
+
   action_fallback AMath.Web.FallbackController
 
   def index(conn, _params) do

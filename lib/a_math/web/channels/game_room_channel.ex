@@ -1,11 +1,10 @@
 defmodule AMath.Web.GameRoomChannel do
   use AMath.Web, :channel
+
   alias AMath.Web.ItemView
   alias AMath.Web.PlayerPresence
   alias AMath.Game
   alias AMath.Game.{Item, Data}
-
-  import IEx
 
   def join("game_room:" <> game_id, _payload, socket) do
     with true <- authorized?(game_id),

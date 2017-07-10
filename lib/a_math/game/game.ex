@@ -2,7 +2,7 @@ defmodule AMath.Game do
   @moduledoc """
   The boundary for the Game system.
   """
-  import IEx
+
   import Ecto.{Query, Changeset}, warn: false
   alias AMath.Repo
   alias AMath.Game.{Item, Data, Rule, Board}
