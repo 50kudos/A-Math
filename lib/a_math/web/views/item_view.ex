@@ -4,7 +4,6 @@ defmodule AMath.Web.ItemView do
   alias AMath.Web.Endpoint
   alias AMath.Game
 
-  import IEx
   def render("index.json", %{items: items}) do
     %{data: render_many(items, ItemView, "item.json")}
   end

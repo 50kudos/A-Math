@@ -11,7 +11,7 @@ defmodule AMath.Web.PageController do
   
   def show(conn, %{"id" => game_id}) do
     conn
-    |> render("game_room.html", game_id: game_id)
+    |> render("game_room.html", game_id: game_id, host: hostname())
   end
   
   def create(conn, _) do
@@ -20,5 +20,13 @@ defmodule AMath.Web.PageController do
       |> redirect(to: page_path(conn, :show, item.game_id))
     end
   end
-
+  
+  
+  defp hostname() do
+    host =
+      Application.get_env(:a_math, AMath.Web.Endpoint)
+      |> get_in([:url, :host])
+    
+    if host == "localhost", do: host <> ":4000", else: host
+  end
 end

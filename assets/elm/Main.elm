@@ -18,7 +18,9 @@ import Draggable
 
 
 type alias Flags =
-    { gameId : String }
+    { gameId : String
+    , host : String
+    }
 
 
 main : Program Flags Model Msg
@@ -33,6 +35,7 @@ main =
 
 type alias Model =
     { gameId : String
+    , host : String
     , game : Game.Model
     , players : List Player
     , phxSocket : Socket.Socket Msg
@@ -69,6 +72,7 @@ init flags =
             joinChannel flags
     in
         { gameId = flags.gameId
+        , host = flags.host
         , game = Game.init
         , players = []
         , phxSocket = phxSocket
@@ -375,13 +379,13 @@ deckPresenceDecoder =
 
 
 joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
-joinChannel { gameId } =
+joinChannel { gameId, host } =
     let
         joinPayload =
             JE.object [ ( "game_id", JE.string gameId ) ]
 
         phxSocket =
-            Socket.init "ws://localhost:4000/socket/websocket"
+            Socket.init ("ws://" ++ host ++ "/socket/websocket")
                 |> Socket.withDebug
                 |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
                 |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
@@ -427,8 +431,8 @@ subscriptions model =
         ]
 
 
-viewCopyUrl : String -> Html msg
-viewCopyUrl gameId =
+viewCopyUrl : String -> String -> Html msg
+viewCopyUrl host gameId =
     div [ class "fixed z-9999 h-100 w-100 flex items-center justify-center light-gray bg-white-70" ]
         [ div [ class "w-90 w-50-l" ]
             [ label [ for "game_url", class "f4 db mb2 black" ] [ text "Game room link" ]
@@ -439,7 +443,7 @@ viewCopyUrl gameId =
                 , autofocus True
                 , id "game_url"
                 , class "pointer input-reset ba b--black-20 pa2 mb2 db w-100"
-                , defaultValue ("http://localhost:4000/game/" ++ gameId)
+                , defaultValue ("http://" ++ host ++ "/game/" ++ gameId)
                 ]
                 []
             , small [ class "f7 black-80 db mb2" ] [ text "Your friend have not been joined the game or they are disconnected." ]
@@ -622,7 +626,7 @@ viewRightPanel game =
 view : Model -> Html Msg
 view model =
     div [ class "flex flex-wrap flex-nowrap-l justify-center items-center items-stretch-m" ]
-        [ waiting (viewCopyUrl model.gameId) model.players |> Maybe.withDefault (text "")
+        [ waiting (viewCopyUrl model.host model.gameId) model.players |> Maybe.withDefault (text "")
         , Item.restItems model.game.items
         , section [ class "w-40-l mh4-l mb3-l" ]
             [ div [ class "relative" ]

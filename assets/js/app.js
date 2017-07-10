@@ -19,11 +19,13 @@ import "phoenix_html"
 // paths "./socket" or full ones "web/static/js/socket".
 
 // import socket from "./socket"
+
 import Elm from "./elm"
 
 var elmProgram = document.getElementById("elm-program")
 if (elmProgram) {
   Elm.Main.embed(elmProgram, {
-    gameId: elmProgram.dataset.gameId
+    gameId: elmProgram.dataset.gameId,
+    host: elmProgram.dataset.gameHost
   })
 }

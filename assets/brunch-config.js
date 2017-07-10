@@ -56,8 +56,7 @@ exports.config = {
       elmFolder: "elm",
       mainModules: ["Main.elm"],
       outputFolder: "../js",
-      outputFile: "elm.js",
-      makeParameters: ["--debug"]
+      outputFile: "elm.js"
     },
     closurecompiler: {
       compilationLevel: 'SIMPLE',
