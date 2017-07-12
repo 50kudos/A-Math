@@ -1,0 +1,31 @@
+<div class="flex flex-column justify-center items-center min-vh-100 bg-dark-gray2">
+  <article class="">
+    <h1 class="dib f2 f-headline-1 blue">Basic Rules</h1>
+    
+    <dl class="lh-title mt0 fw1 f6">
+      <dt class="f4 b light-blue">Equations</dt>
+      <dd class="ml0 mt2 light-blue">Only unary minus with non-zero number is allowed.</dd>
+      <dd class="ml0 mt1 blue">-6 = 4 - 10</dd>
+      <dd class="ml0 mt1 red">+7 = 5 + 2</dd>
+      <dd class="ml0 mt2 light-blue">Only 3 digits can be concatenated.</dd>
+      <dd class="ml0 mt1 blue">-123 = 100 + 23</dd>
+      <dd class="ml0 mt1 red">-1234 = 1000 + 234</dd>
+      <dd class="ml0 mt2 light-blue">Zero left padding is not a valid value.</dd>
+      <dd class="ml0 mt1 red">012 = 011 + 1</dd>
+
+      <dt class="mt4 f4 b light-blue">Points</dt>
+      <dd class="ml0 mt2 light-blue">There are four types of multiplier.</dd>
+      <dd class="ml0 mt1 blue">x2 for piece</dd>
+      <dd class="ml0 mt1 blue">x3 for piece</dd>
+      <dd class="ml0 mt1 blue">x2 for equation</dd>
+      <dd class="ml0 mt1 blue">x3 for equation</dd>
+      <dd class="ml0 mt2 light-blue">Succesfully submitting all 8 items will gain +40 extra points.</dd>
+      
+      <dt class="mt4 f4 b light-blue">End game</dt>
+      <dd class="ml0 mt2 light-blue">There are two ways of ending game.</dd>
+      <dd class="ml0 mt1 blue">1. Ran out of both common items in the bag and one's deck items.</dd>
+      <dd class="ml0 mt1 blue">2. Continually passed the game 3 times. A pass button only appears when there is no items left in the bag.</dd>
+    </dl>
+
+  </article>
+</div>

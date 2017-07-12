@@ -19,6 +19,8 @@ defmodule AMath.Web.Router do
     get "/", PageController, :index
     get "/game/:id", PageController, :show
     post "/game", PageController, :create
+    
+    get "/rules", PageController, :rules
   end
 
   

@@ -11,4 +11,15 @@
   <%= link to: create_game(@conn), method: :post, class: "f6 link ph3 pv2 mb2 dib white bg-dark-blue hover-bg-blue" do
     "New Game"
   end %>
+  
+  <footer class="absolute bottom-2 flex justify-between items-center w-90 w-50-l">
+    <div class="f6 fw1 near-white">
+      <span class="mh1">© <%= DateTime.utc_now().year %></span>
+      <span class="mr3"><%= link "50kudos", to: "https://github.com/50kudos", class: "link blue", target: "_blank", rel: "noopener noreferrer" %></span>
+      <span class="mh1"><%= link "Hire me", to: "mailto:50th.zaint@gmail.com?Subject=We have an Elixir and/or Elm project for you.", class: "link light-blue", target: "_blank", rel: "noopener noreferrer" %></span>
+    </div>
+    <div class="f6 fw1 near-white">
+      <span class="mh1"><%= link "Game rules", to: "/rules", class: "link ba ph2 pv1 lightest-blue"%></span>
+    </div>
+  </footer>
 </div>

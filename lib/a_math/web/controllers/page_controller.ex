@@ -21,6 +21,9 @@ defmodule AMath.Web.PageController do
     end
   end
   
+  def rules(conn, _) do
+    render conn, "rules.html"
+  end
   
   defp hostname() do
     host =
