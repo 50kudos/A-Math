@@ -160,11 +160,11 @@ defmodule AMath.Game.Rule do
         ["0","0"] ->
           false
         [a,b] ->
-          is_digit(a) && is_digit(b)
+          a != "0" && is_digit(a) && is_digit(b)
         ["0","0","0"] ->
           false
         [a,b,c] ->
-          is_digit(a) && is_digit(b) && is_digit(c)
+          a != "0" && is_digit(a) && is_digit(b) && is_digit(c)
         _ ->
           false
       end
