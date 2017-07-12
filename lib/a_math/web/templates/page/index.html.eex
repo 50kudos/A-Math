@@ -2,7 +2,7 @@
   <article class="pa3 pa5-ns">
     <h1 class="dib f2 f-headline-1 blue">A-Math</h1>
     <span class="dib f6 dib pa1 blue lh-copy v-base">v0.2-beta</span>
-    <p class="measure lh-copy light-gray">
+    <p class="fw1 measure lh-copy light-gray">
       A-Math is a simple math scrabble board game, like crossword but with numbers and operators.
       A valid equation is a valid sequence.
     </p>

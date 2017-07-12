@@ -83,9 +83,9 @@ slotHighlight i j aMaybe default =
 submitButtonClass : Bool -> String
 submitButtonClass enabled =
     if enabled then
-        "mv2 f6 link db pv2 pa4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
+        "mv2 f6 link db pa3 pv4-l near-white tc pointer bg-dark-blue hover-bg-blue flex-auto"
     else
-        "mv2 f6 link db pv2 pa4-l dark-gray tc bg-gray flex-auto"
+        "mv2 f6 link db pa3 pv4-l dark-gray tc bg-gray flex-auto"
 
 
 exchangeButtonClass : Bool -> String

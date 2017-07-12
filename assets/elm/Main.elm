@@ -482,7 +482,7 @@ exchangeOrPass myTurn exchangeable exchangeMsg passMsg =
             [ text btnText ]
 
 
-viewStat : Game.Model -> Game.EndStatus -> Html msg
+viewStat : Game.Model -> Game.EndStatus -> List (Html msg)
 viewStat game endStatus =
     let
         winOrLose : String -> String -> String -> Html msg
@@ -534,20 +534,19 @@ viewStat game endStatus =
                 a ->
                     Debug.log "Unexpected game ending status" text (toString a)
     in
-        section []
-            [ div [ class "flex flex-column w4 ba b--gray br2 mv4" ] <|
-                [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
-                    [ text game.p1Stat.deckName ]
-                , endingDetail game.endStatus game.p1Stat game.p2Stat
-                , winOrLose game.items.deckName game.p1Stat.deckName (winner game)
-                ]
-            , div [ class "flex flex-column w4 ba b--gray br2 mv4" ] <|
-                [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
-                    [ text game.p2Stat.deckName ]
-                , endingDetail game.endStatus game.p2Stat game.p1Stat
-                , winOrLose game.items.deckName game.p2Stat.deckName (winner game)
-                ]
+        [ div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
+            [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+                [ text game.p1Stat.deckName ]
+            , endingDetail game.endStatus game.p1Stat game.p2Stat
+            , winOrLose game.items.deckName game.p1Stat.deckName (winner game)
             ]
+        , div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
+            [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+                [ text game.p2Stat.deckName ]
+            , endingDetail game.endStatus game.p2Stat game.p1Stat
+            , winOrLose game.items.deckName game.p2Stat.deckName (winner game)
+            ]
+        ]
 
 
 turnStatus : Bool -> Item.Model -> String -> Html Msg
@@ -567,39 +566,38 @@ turnStatus myTurn myDeck deckName =
             [ text "Dude is thinking .." ]
 
 
-viewPlaying : Game.Model -> Html Msg
+viewPlaying : Game.Model -> List (Html Msg)
 viewPlaying game =
-    section []
-        [ section [ class "mb5-l" ]
-            [ div [ class "flex flex-column h4 ba b--gray br2 mv4" ]
-                [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
-                    [ text game.p1Stat.deckName ]
-                , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
-                    [ text (toString game.p1Stat.point) ]
-                , turnStatus game.myTurn game.items game.p1Stat.deckName
-                ]
-            , div [ class "flex flex-column h4 ba b--gray br2 mv4" ]
-                [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
-                    [ text game.p2Stat.deckName ]
-                , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
-                    [ text (toString game.p2Stat.point) ]
-                , turnStatus game.myTurn game.items game.p2Stat.deckName
-                ]
+    [ section [ class "flex db-l mb5-l" ]
+        [ div [ class "flex flex-column h4 ba b--gray br2 mv4-l mh1 mh0-l" ]
+            [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
+                [ text game.p1Stat.deckName ]
+            , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
+                [ text (toString game.p1Stat.point) ]
+            , turnStatus game.myTurn game.items game.p1Stat.deckName
             ]
-        , section []
-            [ exchangeOrPass game.myTurn game.exchangeable Exchange Pass
-            , a
-                [ class (H.submitButtonClass game.myTurn)
-                , onClick (beforeSubmit game)
-                ]
-                [ text "SUBMIT" ]
-            , a
-                [ class (H.recallButtonClass game.myTurn)
-                , onClick BatchRecall
-                ]
-                [ text "Recall" ]
+        , div [ class "flex flex-column h4 ba b--gray br2 mv4-l mh1 mh0-l" ]
+            [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
+                [ text game.p2Stat.deckName ]
+            , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
+                [ text (toString game.p2Stat.point) ]
+            , turnStatus game.myTurn game.items game.p2Stat.deckName
             ]
         ]
+    , section [ class "mh1" ]
+        [ exchangeOrPass game.myTurn game.exchangeable Exchange Pass
+        , a
+            [ class (H.submitButtonClass game.myTurn)
+            , onClick (beforeSubmit game)
+            ]
+            [ text "SUBMIT" ]
+        , a
+            [ class (H.recallButtonClass game.myTurn)
+            , onClick BatchRecall
+            ]
+            [ text "Recall" ]
+        ]
+    ]
 
 
 winner : Game.Model -> String
@@ -617,7 +615,7 @@ winner game =
             game.p2Stat.deckName
 
 
-viewRightPanel : Game.Model -> Html Msg
+viewRightPanel : Game.Model -> List (Html Msg)
 viewRightPanel game =
     case game.endStatus of
         Game.Running ->
@@ -644,7 +642,6 @@ view model =
                 [ Item.myItems model.game.items ItemMsg
                 ]
             ]
-        , section [ class "flex justify-between flex-auto flex-none-l self-end db-l w4 pa2 mt3 mt0-l ml2-l mb5-l pb3-l" ]
-            [ viewRightPanel model.game
-            ]
+        , section [ class "flex justify-between justify-center-m flex-auto flex-none-l self-end db-l w4 pa2 mt3 mt0-l ml2-l mb5-l pb3-l" ]
+            (viewRightPanel model.game)
         ]
