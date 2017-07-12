@@ -228,28 +228,42 @@ viewChoices msg dragMsg position listA =
     in
         case List.length listA of
             2 ->
-                div
-                    ((Draggable.touchTriggers position dragMsg)
-                        ++ [ class <|
-                                "flex justify-center justify-start-ns flex-wrap absolute mw6 "
-                                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                           , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                           , Draggable.mouseTrigger position dragMsg
-                           ]
-                    )
-                    (List.map shortChoices listA)
+                div []
+                    [ span
+                        ([ class "db absolute bt bb b--near-black bg-yellow z-9999 o-70 h1 pa1"
+                         , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ), ( "width", "141px" ) ]
+                         ]
+                            ++ (Draggable.mouseTrigger position dragMsg)
+                            :: (Draggable.touchTriggers position dragMsg)
+                        )
+                        [ text "๐ ๐ ๐" ]
+                    , div
+                        [ class <|
+                            "flex justify-center justify-start-ns flex-wrap absolute mw6 "
+                                ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90 pt4"
+                        , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ) ]
+                        ]
+                        (List.map shortChoices listA)
+                    ]
 
             26 ->
-                div
-                    ((Draggable.touchTriggers position dragMsg)
-                        ++ [ class <|
-                                "flex justify-center flex-wrap absolute w5 "
-                                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                           , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                           , Draggable.mouseTrigger position dragMsg
-                           ]
-                    )
-                    (List.map longChoices listA)
+                div []
+                    [ span
+                        ([ class "db absolute bt bb b--near-black bg-light-yellow z-9999 o-70 h1 pa1"
+                         , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ), ( "width", "247px" ) ]
+                         ]
+                            ++ (Draggable.mouseTrigger position dragMsg)
+                            :: (Draggable.touchTriggers position dragMsg)
+                        )
+                        [ text "๐ ๐ ๐" ]
+                    , div
+                        [ class <|
+                            "flex justify-center flex-wrap absolute w5 "
+                                ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90 pt4"
+                        , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ) ]
+                        ]
+                        (List.map longChoices listA)
+                    ]
 
             _ ->
                 Debug.log "Unexpected list of choices" <| text (toString listA)

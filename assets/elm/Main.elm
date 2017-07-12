@@ -84,7 +84,14 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    if model.game.endStatus == Game.PassingEnded || model.game.endStatus == Game.DeckEnded then
+    if (not << List.isEmpty) model.game.choices then
+        case msg of
+            GameMsg _ ->
+                normalUpdate msg model
+
+            _ ->
+                ( model, Cmd.none )
+    else if model.game.endStatus == Game.PassingEnded || model.game.endStatus == Game.DeckEnded then
         ( model, Cmd.none )
     else if model.game.myTurn then
         normalUpdate msg model
