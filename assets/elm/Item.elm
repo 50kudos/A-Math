@@ -192,7 +192,7 @@ restItems { restItems } =
                 , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
                 ]
     in
-        section [ class "dn flex-ns flex-wrap items-end-l flex-column-l self-start-l mw5-l mb4 ph2 ph3-l w-100 vh-50-l" ]
+        section [ class "dn flex-ns flex-wrap items-end-l flex-column-l self-start-l mw5-l ma2 ma0-l ph2 ph3-l w-100 vh-50-l" ]
             (List.map tile restItems)
 
 
@@ -203,8 +203,8 @@ itemChoices { restItems } =
         |> List.map .item
 
 
-viewChoices : (String -> msg) -> (Draggable.Msg { x : Float, y : Float } -> msg) -> String -> List String -> Html msg
-viewChoices msg dragMsg translate listA =
+viewChoices : (String -> msg) -> (Draggable.Msg { x : Float, y : Float } -> msg) -> { x : Float, y : Float } -> List String -> Html msg
+viewChoices msg dragMsg position listA =
     let
         shortChoices : String -> Html msg
         shortChoices item =
@@ -221,29 +221,33 @@ viewChoices msg dragMsg translate listA =
                 , onClick (msg item)
                 ]
                 [ text item ]
+
+        translate : String
+        translate =
+            "translate(" ++ (toString position.x) ++ "px, " ++ (toString position.y) ++ "px)"
     in
         case List.length listA of
             2 ->
                 div
-                    ([ class <|
-                        "flex justify-center justify-start-ns flex-wrap absolute mw6 "
-                            ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                     , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                     , Draggable.mouseTrigger { x = -75, y = -38 } dragMsg
-                     ]
-                        ++ (Draggable.touchTriggers { x = -75, y = -38 } dragMsg)
+                    ((Draggable.touchTriggers position dragMsg)
+                        ++ [ class <|
+                                "flex justify-center justify-start-ns flex-wrap absolute mw6 "
+                                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
+                           , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
+                           , Draggable.mouseTrigger position dragMsg
+                           ]
                     )
                     (List.map shortChoices listA)
 
             26 ->
                 div
-                    ([ class <|
-                        "flex justify-center flex-wrap absolute w5 "
-                            ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
-                     , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
-                     , Draggable.mouseTrigger { x = -128, y = -69 } dragMsg
-                     ]
-                        ++ (Draggable.touchTriggers { x = -128, y = -69 } dragMsg)
+                    ((Draggable.touchTriggers position dragMsg)
+                        ++ [ class <|
+                                "flex justify-center flex-wrap absolute w5 "
+                                    ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90"
+                           , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ) ]
+                           , Draggable.mouseTrigger position dragMsg
+                           ]
                     )
                     (List.map longChoices listA)
 

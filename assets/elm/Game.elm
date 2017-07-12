@@ -92,7 +92,7 @@ update msg model =
             { model | board = Board.markChoice i j item model.board } ! [ Cmd.none ]
 
         StartDragging initialPosition ->
-            { model | xy = Debug.log "initialPosition" initialPosition } ! [ Cmd.none ]
+            { model | xy = initialPosition } ! [ Cmd.none ]
 
         OnDragBy ( dx, dy ) ->
             ( { model | xy = Position (model.xy.x + dx) (model.xy.y + dy) }
@@ -181,25 +181,25 @@ viewChoiceFor position model =
     case position of
         Just ( item, i, j ) ->
             let
-                translate : String -> String
-                translate choiceType =
+                choicePos : String -> Position
+                choicePos choiceType =
                     if model.xy == (Position -1 -1) then
                         if choiceType == "blank" then
-                            "translate(-128px, -69px)"
+                            { model | xy = Position -128 -69 }.xy
                         else
-                            "translate(-75px, -38px)"
+                            { model | xy = Position -75 -38 }.xy
                     else
-                        "translate(" ++ (toString model.xy.x) ++ "px, " ++ (toString model.xy.y) ++ "px)"
+                        model.xy
             in
                 case item of
                     "blank" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) (Item.itemChoices model.items)
+                        Item.viewChoices (SelectChoice i j) DragMsg (choicePos item) (Item.itemChoices model.items)
 
                     "+/-" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) [ "+", "-" ]
+                        Item.viewChoices (SelectChoice i j) DragMsg (choicePos item) [ "+", "-" ]
 
                     "x/÷" ->
-                        Item.viewChoices (SelectChoice i j) DragMsg (translate item) [ "x", "÷" ]
+                        Item.viewChoices (SelectChoice i j) DragMsg (choicePos item) [ "x", "÷" ]
 
                     _ ->
                         Debug.crash "Unexpected selectable item occurs."
