@@ -15,7 +15,8 @@ use Mix.Config
 # which you typically run after static files are built.
 config :a_math, AMath.Web.Endpoint,
   on_init: {AMath.Web.Endpoint, :load_from_system_env, []},
-  url: [host: "amath.morphism.io", port: 80],
+  url: [host: "amath0.morphism.io", port: 80],
+  secret_key_base: System.get_env("SECRET_KEY_BASE"),
   root: ".",
   server: true,
   cache_static_manifest: "priv/static/cache_manifest.json"
@@ -63,4 +64,11 @@ config :logger, level: :info
 
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
-import_config "prod.secret.exs"
+# import_config "prod.secret.exs"
+config :a_math, AMath.Repo,
+  adapter: Ecto.Adapters.Postgres,
+  username: System.get_env("DATA_DB_USER"),
+  password: System.get_env("DATA_DB_PASS"),
+  hostname: System.get_env("DATA_DB_HOST"),
+  database: "a_math_prod",
+  pool_size: 15

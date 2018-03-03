@@ -54,6 +54,7 @@ exports.config = {
     },
     elmBrunch: {
       elmFolder: "elm",
+      executablePath: '../node_modules/.bin',
       mainModules: ["Main.elm"],
       outputFolder: "../js",
       outputFile: "elm.js"

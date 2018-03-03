@@ -7,12 +7,19 @@ use Mix.Config
 # watchers to your application. For example, we use it
 # with brunch.io to recompile .js and .css sources.
 config :a_math, AMath.Web.Endpoint,
+  url: [host: "amath.local", port: 4000],
   http: [port: 4000],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
-  watchers: [node: ["node_modules/brunch/bin/brunch", "watch", "--stdin",
-                    cd: Path.expand("../assets", __DIR__)]]
+  watchers: [
+    node: [
+      "node_modules/brunch/bin/brunch",
+      "watch",
+      "--stdin",
+      cd: Path.expand("../assets", __DIR__)
+    ]
+  ]
 
 # ## SSL Support
 #
@@ -51,7 +58,8 @@ config :phoenix, :stacktrace_depth, 20
 # Configure your database
 config :a_math, AMath.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "fifth",
+  username: System.get_env("DATA_DB_USER"),
+  password: System.get_env("DATA_DB_PASS"),
+  hostname: System.get_env("DATA_DB_HOST"),
   database: "a_math_dev",
-  hostname: "localhost",
   pool_size: 10

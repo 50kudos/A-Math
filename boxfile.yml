@@ -1,0 +1,18 @@
+---
+run.config:
+  engine: elixir
+  dev_packages:
+    - nodejs
+    - inotify-tools
+  cache_dirs:
+    - assets/node_modules
+    - assets/elm/elm-stuff
+  extra_path_dirs:
+    - assets/node_modules/.bin
+  fs_watch: true
+  extra_steps:
+    - cd assets && yarn
+    - cd assets && yarn add --dev elm
+    - cd assets/elm && ../node_modules/.bin/elm-package install --yes
+data.db:
+  image: nanobox/postgresql

@@ -6,16 +6,14 @@
 use Mix.Config
 
 # General application configuration
-config :a_math,
-  ecto_repos: [AMath.Repo]
+config :a_math, ecto_repos: [AMath.Repo]
 
 # Configures the endpoint
 config :a_math, AMath.Web.Endpoint,
   url: [host: "localhost"],
-  secret_key_base: "JDtof2Du8rrIgU5+uav8gQU1Pa2lcm908zTiS5R3eBANY/Hd9O+p3jbBN6nDD+ws",
+  secret_key_base: System.get_env("SECRET_KEY_BASE"),
   render_errors: [view: AMath.Web.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: AMath.PubSub,
-           adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: AMath.PubSub, adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -24,4 +22,4 @@ config :logger, :console,
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{Mix.env}.exs"
+import_config "#{Mix.env()}.exs"
