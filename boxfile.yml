@@ -14,5 +14,17 @@ run.config:
     - cd assets && yarn
     - cd assets && yarn add --dev elm
     - cd assets/elm && ../node_modules/.bin/elm-package install --yes
+
+deploy.config:
+  extra_steps:
+    - mix phx.digest
+  before_live:
+    web.main:
+      - mix ecto.create --quiet
+      - mix ecto.migrate
+
 data.db:
   image: nanobox/postgresql
+
+web.main:
+  start: node-start mix phx.server

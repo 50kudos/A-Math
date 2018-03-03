@@ -15,7 +15,8 @@ use Mix.Config
 # which you typically run after static files are built.
 config :a_math, AMath.Web.Endpoint,
   on_init: {AMath.Web.Endpoint, :load_from_system_env, []},
-  url: [host: "amath0.morphism.io", port: 80],
+  http: [port: 8080],
+  url: [host: System.get_env("ENDPOINT_HOST"), port: 80],
   secret_key_base: System.get_env("SECRET_KEY_BASE"),
   root: ".",
   server: true,
