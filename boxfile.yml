@@ -1,6 +1,8 @@
 ---
 run.config:
   engine: elixir
+  engine.config:
+    runtime: elixir-1.4
   dev_packages:
     - nodejs
     - inotify-tools
