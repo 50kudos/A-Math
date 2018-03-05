@@ -1,5 +1,7 @@
 # A-MATH
 
+![](overview.gif)
+
 ### Equipments
 
 1. Board: 225 slots (15 x 15)
