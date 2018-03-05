@@ -392,7 +392,7 @@ joinChannel { gameId, host } =
             JE.object [ ( "game_id", JE.string gameId ) ]
 
         phxSocket =
-            Socket.init ("ws://" ++ host ++ "/socket/websocket")
+            Socket.init ("wss://" ++ host ++ "/socket/websocket")
                 |> Socket.withDebug
                 |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
                 |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
@@ -450,7 +450,7 @@ viewCopyUrl host gameId =
                 , autofocus True
                 , id "game_url"
                 , class "pointer input-reset ba b--black-20 pa2 mb2 db w-100"
-                , defaultValue ("http://" ++ host ++ "/game/" ++ gameId)
+                , defaultValue ("https://" ++ host ++ "/game/" ++ gameId)
                 ]
                 []
             , small [ class "f7 black-80 db mb2" ] [ text "Your friend have not been joined the game or they are disconnected." ]

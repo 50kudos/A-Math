@@ -26,9 +26,8 @@ defmodule AMath.Web.PageController do
   end
 
   defp hostname() do
-    Application.get_env(:a_math, AMath.Web.Endpoint)
-    |> Keyword.get(:url)
-    |> Keyword.values()
-    |> Enum.join(":")
+    :a_math
+    |> Application.get_env(AMath.Web.Endpoint)
+    |> Kernel.get_in([:url, :host])
   end
 end
