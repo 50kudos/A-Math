@@ -1,6 +1,6 @@
 # A-MATH
 
-So you want to play game? Go for it :) https://amath.morphism.io/
+So you want to play game? Go for it :) https://a-math.com/
 
 ![](overview.gif)
 
