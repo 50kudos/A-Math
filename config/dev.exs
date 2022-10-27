@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -58,8 +58,7 @@ config :phoenix, :stacktrace_depth, 20
 # Configure your database
 config :a_math, AMath.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: System.get_env("DATA_DB_USER"),
-  password: System.get_env("DATA_DB_PASS"),
-  hostname: System.get_env("DATA_DB_HOST"),
+  hostname: "localhost",
   database: "a_math_dev",
-  pool_size: 10
+  pool_size: 10,
+  show_sensitive_data_on_connection_error: true

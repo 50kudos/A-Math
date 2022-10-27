@@ -1,5 +1,7 @@
 defmodule AMath.Repo do
-  use Ecto.Repo, otp_app: :a_math
+  use Ecto.Repo,
+    otp_app: :a_math,
+    adapter: Ecto.Adapters.Postgres
 
   @doc """
   Dynamically loads the repository url from the

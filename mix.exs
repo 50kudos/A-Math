@@ -4,9 +4,9 @@ defmodule AMath.Mixfile do
   def project do
     [app: :a_math,
      version: "0.0.1",
-     elixir: "~> 1.4",
+     elixir: "~> 1.14",
      elixirc_paths: elixirc_paths(Mix.env),
-     compilers: [:phoenix, :gettext] ++ Mix.compilers,
+     compilers: [:phoenix] ++ Mix.compilers,
      start_permanent: Mix.env == :prod,
      aliases: aliases(),
      deps: deps()]
@@ -28,16 +28,17 @@ defmodule AMath.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [{:phoenix, "~> 1.3.0-rc"},
-     {:phoenix_pubsub, "~> 1.0"},
-     {:phoenix_ecto, "~> 3.2"},
-     {:postgrex, ">= 0.0.0"},
-     {:phoenix_html, "~> 2.6"},
-     {:phoenix_live_reload, "~> 1.0", only: :dev},
-     {:gettext, "~> 0.11"},
-     {:cowboy, "~> 1.0"},
-     {:edeliver, "~> 1.4.3"},
-     {:distillery, ">= 0.8.0", warn_missing: false}]
+    [{:phoenix, "~> 1.6"},
+     {:phoenix_pubsub, "~> 2.1"},
+     {:phoenix_ecto, "~> 4.4"},
+     {:ecto_sql, "~> 3.9"},
+     {:postgrex, "~> 0.16.5"},
+     {:phoenix_html, "~> 3.2"},
+     {:phoenix_live_reload, "~> 1.3", only: :dev},
+     {:gettext, "~> 0.20.0"},
+     {:plug_cowboy, "~> 2.0"},
+     {:jason, "~> 1.4"}
+    ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
@@ -49,6 +50,6 @@ defmodule AMath.Mixfile do
   defp aliases do
     ["ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
      "ecto.reset": ["ecto.drop", "ecto.setup"],
-     "test": ["ecto.create --quiet", "ecto.migrate", "test"]]
+     test: ["ecto.create --quiet", "ecto.migrate", "test"]]
   end
 end

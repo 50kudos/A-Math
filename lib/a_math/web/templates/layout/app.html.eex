@@ -14,7 +14,7 @@
 
   <body>
     <main role="main">
-      <%= render @view_module, @view_template, assigns %>
+      <%= @inner_content %>
     </main>
 
     <script src="<%= static_path(@conn, "/js/app.js") %>"></script>
