@@ -1,24 +1,23 @@
-module Main exposing (main)
+port module Main exposing (main)
 
-import Browser
-import Html exposing (Html, map, div, a, text, section, input, label, small, span, p)
-import Html.Events exposing (onClick)
-import Html.Attributes exposing (class, value, type_, autofocus, for, id, readonly)
-import Helper as H
--- import Phoenix.Socket as Socket
--- import Phoenix.Channel as Channel
--- import Phoenix.Push as Pusher
--- import Phoenix.Presence as Presence
-import Json.Encode as JE
-import Json.Decode as JD
-import Dict
-import Game
 import Board
-import Item
+import Browser
+import Dict
 import Draggable
+import Game
+import Helper as H
+import Html exposing (Html, a, div, input, label, map, p, section, small, span, text)
+import Html.Attributes exposing (autofocus, class, for, id, readonly, type_, value)
+import Html.Events exposing (onClick)
+import Item
+import Json.Decode as JD
+import Json.Decode.Extra as DE
+import Json.Encode as JE
 
--- port sendMessage : String -> Cmd msg
--- port messageReceiver : (String -> msg) -> Sub msg
+
+port sendMessage : JD.Value -> Cmd msg
+port messageReceiver : (JE.Value -> msg) -> Sub msg
+
 
 type alias Flags =
     { gameId : String
@@ -36,13 +35,15 @@ main =
         }
 
 
+type alias DeckPresence =
+    {  onlineAt : String
+    }
+
 type alias Model =
     { gameId : String
     , host : String
     , game : Game.Model
-    , players : List Player
-    -- , phxSocket : Socket.Socket Msg
-    -- , phxPresences : Presence.PresenceState DeckPresence
+    , players : List DeckPresence
     }
 
 
@@ -54,7 +55,6 @@ type Msg
     = GameMsg Game.Msg
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
-    -- | PhoenixMsg (Socket.Msg Msg)
     | JoinedResponse JE.Value
     | ResetGame
     | Exchange
@@ -64,21 +64,20 @@ type Msg
     | Push
     | ReceiveNewState JE.Value
     | ReceiveNewCommonState JE.Value
-    -- | ReceivePresence JE.Value
-    -- | ReceivePresenceDiff JE.Value
+    | ReceivePresence JE.Value
+    | ReceivePresenceDiff JE.Value
+    | Noop JE.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ({ gameId = flags.gameId
-        , host = flags.host
-        , game = Game.init
-        , players = []
-
-        }
-        , Cmd.none
-        )
-
+    ( { gameId = flags.gameId
+      , host = flags.host
+      , game = Game.init
+      , players = []
+      }
+    , Cmd.none
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -90,17 +89,17 @@ update msg model =
 
             _ ->
                 ( model, Cmd.none )
+
     else if model.game.endStatus == Game.PassingEnded || model.game.endStatus == Game.DeckEnded then
         ( model, Cmd.none )
+
     else if model.game.myTurn then
         normalUpdate msg model
+
     else
         case msg of
             JoinedResponse a ->
                 normalUpdate msg model
-
-            -- PhoenixMsg a ->
-            --     normalUpdate msg model
 
             ReceiveNewState a ->
                 normalUpdate msg model
@@ -108,11 +107,10 @@ update msg model =
             ReceiveNewCommonState a ->
                 normalUpdate msg model
 
-            -- ReceivePresence a ->
-            --     normalUpdate msg model
-
-            -- ReceivePresenceDiff a ->
-            --     normalUpdate msg model
+            ReceivePresence a ->
+                normalUpdate msg model
+            ReceivePresenceDiff a ->
+                normalUpdate msg model
 
             ItemMsg a ->
                 normalUpdate msg model
@@ -132,35 +130,27 @@ normalUpdate msg_ model =
                 choices =
                     if Game.isDraging msg then
                         game.choices
+
                     else
                         List.drop 1 game.choices
             in
-                case game.choices of
-                    [] ->
-                        ({ model | game = game }, Cmd.map GameMsg gameCmd )
+            case game.choices of
+                [] ->
+                    ( { model | game = game }, Cmd.map GameMsg gameCmd )
 
-                    _ ->
-                        case choices of
-                            [] ->
-                                update Push { model | game = { game | choices = choices } }
+                _ ->
+                    case choices of
+                        [] ->
+                            update Push { model | game = { game | choices = choices } }
 
-                            _ ->
-                                ({ model | game = { game | choices = choices } },  Cmd.map GameMsg gameCmd )
+                        _ ->
+                            ( { model | game = { game | choices = choices } }, Cmd.map GameMsg gameCmd )
 
         ItemMsg msg ->
-            ({ model | game = Game.updateItems msg model.game }, Cmd.none )
+            ( { model | game = Game.updateItems msg model.game }, Cmd.none )
 
         BoardMsg msg ->
-            ({ model | game = Game.updateBoard msg model.game }, Cmd.none )
-
-        -- PhoenixMsg msg ->
-        --     let
-        --         ( phxSocket, phxCmd ) =
-        --             Socket.update msg model.phxSocket
-        --     in
-        --         ( { model | phxSocket = phxSocket }
-        --         , Cmd.map PhoenixMsg phxCmd
-        --         )
+            ( { model | game = Game.updateBoard msg model.game }, Cmd.none )
 
         JoinedResponse response ->
             case JD.decodeValue Game.joinedDecoder response of
@@ -199,20 +189,17 @@ normalUpdate msg_ model =
                                 , endStatus = gameData.common.endStatus
                             }
                     in
-                        ({ model | game = game_ },  Cmd.none)
+                    ( { model | game = game_ }, Cmd.none )
 
                 Err error ->
-                    Debug.log (Debug.toString error) ( model, Cmd.none )
+                    ( model, Cmd.none )
 
         ResetGame ->
             let
                 reqBody =
-                    (Board.encoder model.game.board)
-
-                -- ( phxSocket, phxCmd ) =
-                --     Socket.push (patchItems "reset" model.gameId reqBody) model.phxSocket
+                     Board.encoder model.game.board
             in
-                ( model, Cmd.none )
+            ( model, pushToSocket "reset" reqBody )
 
         EnqueueChoices forPosition ->
             let
@@ -222,46 +209,40 @@ normalUpdate msg_ model =
                 updatedGame =
                     { game | choices = forPosition }
             in
-                ({ model | game = updatedGame },  Cmd.none)
+            ( { model | game = updatedGame }, Cmd.none )
 
         Exchange ->
             let
                 reqBody =
-                    (Board.encoder model.game.board)
+                    Board.encoder model.game.board
 
                 exchangeEvent =
                     "exchange:" ++ model.game.items.deckId
 
-                -- ( phxSocket, phxCmd ) =
-                --     Socket.push (patchItems exchangeEvent model.gameId reqBody) model.phxSocket
             in
-                ( model  , Cmd.none )
+            ( model, pushToSocket exchangeEvent reqBody )
 
         Pass ->
             let
                 reqBody =
-                    []
+                    JE.list JE.string []
 
                 passEvent =
                     "pass:" ++ model.game.items.deckId
 
-                -- ( phxSocket, phxCmd ) =
-                --     Socket.push (patchItems passEvent model.gameId reqBody) model.phxSocket
             in
-                ( model, Cmd.none )
+            ( model, pushToSocket passEvent reqBody )
 
         Push ->
             let
                 reqBody =
-                    (Board.encoder model.game.board)
+                    Board.encoder model.game.board
 
                 commitEvent =
                     "commit:" ++ model.game.items.deckId
 
-                -- ( phxSocket, phxCmd ) =
-                --     Socket.push (patchItems commitEvent model.gameId reqBody) model.phxSocket
             in
-                ( model  , Cmd.none )
+            ( model, pushToSocket commitEvent reqBody )
 
         BatchRecall ->
             let
@@ -274,7 +255,7 @@ normalUpdate msg_ model =
                         , board = Board.clearStaging game.board
                     }
             in
-                ({ model | game = game_ },  Cmd.none)
+            ( { model | game = game_ }, Cmd.none )
 
         ReceiveNewState response ->
             case JD.decodeValue Game.myStateDecoder response of
@@ -296,10 +277,10 @@ normalUpdate msg_ model =
                         newGame =
                             { game | items = items_ }
                     in
-                        ({ model | game = newGame },  Cmd.none)
+                    ( { model | game = newGame }, Cmd.none )
 
                 Err error ->
-                    Debug.log (Debug.toString error) ( model, Cmd.none )
+                    ( model, Cmd.none )
 
         ReceiveNewCommonState response ->
             case JD.decodeValue Game.commonStateDecoder response of
@@ -334,80 +315,54 @@ normalUpdate msg_ model =
                                 , endStatus = commonGameData.endStatus
                             }
                     in
-                        ({ model | game = new_game },  Cmd.none)
+                    ( { model | game = new_game }, Cmd.none )
 
                 Err error ->
-                    Debug.log (Debug.toString error) ( model, Cmd.none )
+                    ( model, Cmd.none )
 
-        -- ReceivePresence response ->
-        --     case JD.decodeValue (Presence.presenceStateDecoder deckPresenceDecoder) response of
-        --         Ok presenceState ->
-        --             let
-        --                 newPresenceState =
-        --                     model.phxPresences |> Presence.syncState presenceState
-        --             in
-        --                 ( { model | phxPresences = newPresenceState }, Cmd.none )
-
-        --         Err error ->
-        --             Debug.log error ( model, Cmd.none )
-
-        -- ReceivePresenceDiff response ->
-        --     case JD.decodeValue (Presence.presenceDiffDecoder deckPresenceDecoder) response of
-        --         Ok presenceState ->
-        --             let
-        --                 newPresenceState =
-        --                     model.phxPresences |> Presence.syncDiff presenceState
-
-        --                 players =
-        --                     Dict.keys newPresenceState |> List.map Player
-        --             in
-        --                 ( { model | phxPresences = newPresenceState, players = players }, Cmd.none )
-
-        --         Err error ->
-        --             Debug.log error ( model, Cmd.none )
+        ReceivePresence response ->
+            case JD.decodeValue deckPresenceDecoder response of
+                Ok presenceState ->
+                    ( { model | players = presenceState }, Cmd.none )
 
 
-type alias DeckPresence =
-    { onlineAt : String
-    }
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "Error: ReceivePresence" error
+                    in
+                        ( model, Cmd.none )
+
+        ReceivePresenceDiff response ->
+            case JD.decodeValue deckPresenceDecoder response of
+                Ok presenceState_ ->
+                    let
+                        presenceState =
+                            Debug.log "presenceState" presenceState_
 
 
-type alias Player =
-    { name : String }
+                    in
+                    ( { model | players = presenceState }, Cmd.none )
+
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "Error: ReceivePresenceDiff" error
+                    in
+                        ( model, Cmd.none )
+
+        Noop _ ->
+            ( model, Cmd.none )
 
 
-deckPresenceDecoder : JD.Decoder DeckPresence
+deckPresenceDecoder : JD.Decoder (List DeckPresence)
 deckPresenceDecoder =
-    JD.map DeckPresence
-        (JD.field "online_at" JD.string)
-
-
--- joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
--- joinChannel { gameId, host } =
---     let
---         joinPayload =
---             JE.object [ ( "game_id", JE.string gameId ) ]
-
---         phxSocket =
---             Socket.init ("wss://" ++ host ++ "/socket/websocket")
---                 |> Socket.withDebug
---                 |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
---                 |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
---                 |> Socket.on "presence_state" ("game_room:" ++ gameId) ReceivePresence
---                 |> Socket.on "presence_diff" ("game_room:" ++ gameId) ReceivePresenceDiff
-
---         channel =
---             Channel.init ("game_room:" ++ gameId)
---                 |> Channel.onJoin JoinedResponse
---                 |> Channel.withPayload joinPayload
---     in
---         Socket.join channel phxSocket
-
-
--- patchItems : String -> String -> JE.Value -> Pusher.Push Msg
--- patchItems event gameId reqBody =
---     Pusher.init event ("game_room:" ++ gameId)
---         |> Pusher.withPayload reqBody
+    let
+        deckDecode =
+            JD.map DeckPresence
+                (JD.field "online_at" JD.string)
+    in
+        JD.list deckDecode
 
 
 beforeSubmit : Game.Model -> Msg
@@ -419,20 +374,65 @@ beforeSubmit model =
                 |> List.filter (\item -> List.member item.item [ "blank", "+/-", "x/÷" ])
                 |> List.map (\item -> ( item.item, item.i, item.j ))
     in
-        case filterChoicable model.board of
-            [] ->
-                Push
+    case filterChoicable model.board of
+        [] ->
+            Push
 
-            choiceList ->
-                EnqueueChoices choiceList
+        choiceList ->
+            EnqueueChoices choiceList
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [
-        Draggable.subscriptions Game.DragMsg model.game.drag |> Sub.map GameMsg
+        [ messageReceiver stateEventToMsg
+        , Draggable.subscriptions Game.DragMsg model.game.drag |> Sub.map GameMsg
         ]
+
+
+stateEventToMsg : JE.Value -> Msg
+stateEventToMsg event =
+    let
+        whichEvent e =
+            case e of
+                "joined" ->
+                    JoinedResponse
+
+                "new_state" ->
+                    ReceiveNewState
+
+                "common_state" ->
+                    ReceiveNewCommonState
+
+                "presence_state" ->
+                    ReceivePresence
+
+                "presence_diff" ->
+                    ReceivePresenceDiff
+
+                _ ->
+                    Noop
+
+        eventDeocder =
+            JD.field "type" JD.string
+                |> JD.andThen (whichEvent >> JD.succeed)
+                |> DE.andMap (JD.field "detail" JD.value)
+    in
+    case JD.decodeValue eventDeocder event of
+        Ok msg ->
+            msg
+
+        Err _ ->
+            Noop event
+
+
+pushToSocket : String -> JE.Value -> Cmd Msg
+pushToSocket name body =
+    sendMessage <|
+        JE.object
+            [ ( "type", JE.string name )
+            , ( "detail", body )
+            ]
 
 
 viewCopyUrl : String -> String -> Html msg
@@ -455,10 +455,11 @@ viewCopyUrl host gameId =
         ]
 
 
-waiting : a -> List Player -> Maybe a
+waiting : a -> List DeckPresence -> Maybe a
 waiting a players =
-    if 0 < (List.length players) && (List.length players) < 2 then
+    if 0 < List.length players && List.length players < 2 then
         Just a
+
     else
         Nothing
 
@@ -469,14 +470,15 @@ exchangeOrPass myTurn exchangeable exchangeMsg passMsg =
         ( msg, btnText ) =
             if exchangeable then
                 ( exchangeMsg, "Exchange" )
+
             else
                 ( passMsg, "Pass" )
     in
-        a
-            [ class (H.exchangeButtonClass myTurn)
-            , onClick msg
-            ]
-            [ text btnText ]
+    a
+        [ class (H.exchangeButtonClass myTurn)
+        , onClick msg
+        ]
+        [ text btnText ]
 
 
 viewStat : Game.Model -> Game.EndStatus -> List (Html msg)
@@ -489,20 +491,23 @@ viewStat game endStatus =
                     if myDeckName == winnerDeckName then
                         if myDeckName == playerDeckname then
                             ( "YOU WIN!", "bg-blue near-white" )
+
                         else
                             ( "DUDE", "bg-near-white mid-gray" )
+
                     else if myDeckName == playerDeckname then
                         ( "YOU LOSE!", "bg-blue near-white" )
+
                     else
                         ( "DUDE", "bg-near-white mid-gray" )
             in
-                span [ class <| cssClass ++ " f6 pa2 tc br2 br--bottom" ]
-                    [ text text_ ]
+            span [ class <| cssClass ++ " f6 pa2 tc br2 br--bottom" ]
+                [ text text_ ]
 
         passingEndDetail : Int -> Maybe Int -> List (Html msg)
         passingEndDetail point deckPoint =
             [ p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Point = " ++ (String.fromInt point) ]
+                [ text <| "Point = " ++ String.fromInt point ]
             , p [ class "ma0 fw1 f7 blue" ]
                 [ text <| "Deck -" ++ (String.fromInt <| Maybe.withDefault 0 deckPoint) ]
             , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
@@ -512,7 +517,7 @@ viewStat game endStatus =
         deckEndDetail : Int -> Maybe Int -> List (Html msg)
         deckEndDetail point opDeckPoint =
             [ p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Point = " ++ (String.fromInt point) ]
+                [ text <| "Point = " ++ String.fromInt point ]
             , p [ class "ma0 fw1 f7 blue" ]
                 [ text <| "Bonus +" ++ (String.fromInt <| Maybe.withDefault 0 opDeckPoint) ]
             , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
@@ -531,19 +536,19 @@ viewStat game endStatus =
                 a ->
                     Debug.log "Unexpected game ending status" text (Debug.toString a)
     in
-        [ div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
-            [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
-                [ text game.p1Stat.deckName ]
-            , endingDetail game.endStatus game.p1Stat game.p2Stat
-            , winOrLose game.items.deckName game.p1Stat.deckName (winner game)
-            ]
-        , div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
-            [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
-                [ text game.p2Stat.deckName ]
-            , endingDetail game.endStatus game.p2Stat game.p1Stat
-            , winOrLose game.items.deckName game.p2Stat.deckName (winner game)
-            ]
+    [ div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
+        [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+            [ text game.p1Stat.deckName ]
+        , endingDetail game.endStatus game.p1Stat game.p2Stat
+        , winOrLose game.items.deckName game.p1Stat.deckName (winner game)
         ]
+    , div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
+        [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
+            [ text game.p2Stat.deckName ]
+        , endingDetail game.endStatus game.p2Stat game.p1Stat
+        , winOrLose game.items.deckName game.p2Stat.deckName (winner game)
+        ]
+    ]
 
 
 turnStatus : Bool -> Item.Model -> String -> Html Msg
@@ -552,12 +557,15 @@ turnStatus myTurn myDeck deckName =
         if myDeck.deckName == deckName then
             span [ class "f6 pa2 tc bg-blue near-white br2 br--bottom" ]
                 [ text "Your turn" ]
+
         else
             span [ class "f6 pa2 tc bg-near-white mid-gray br2 br--bottom" ]
                 [ text "DUDE" ]
+
     else if myDeck.deckName == deckName then
         span [ class "f6 pa2 tc bg-near-white mid-gray br2 br--bottom" ]
             [ text "YOU" ]
+
     else
         span [ class "f7 pv2 ph1 tc bg-blue near-white br2 br--bottom" ]
             [ text "Dude is thinking .." ]
@@ -606,10 +614,11 @@ winner game =
         p2Deck =
             Maybe.withDefault 0 game.p2Stat.deckPoint
     in
-        if (game.p1Stat.point - p1Deck) > (game.p2Stat.point - p2Deck) then
-            game.p1Stat.deckName
-        else
-            game.p2Stat.deckName
+    if (game.p1Stat.point - p1Deck) > (game.p2Stat.point - p2Deck) then
+        game.p1Stat.deckName
+
+    else
+        game.p2Stat.deckName
 
 
 viewRightPanel : Game.Model -> List (Html Msg)
