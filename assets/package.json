@@ -2,21 +2,16 @@
   "repository": {},
   "license": "MIT",
   "scripts": {
-    "deploy": "brunch build --production",
-    "watch": "brunch watch --stdin"
+    "build": "vite build",
+    "watch": "vite build --watch"
   },
   "dependencies": {
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html"
   },
   "devDependencies": {
-    "babel-brunch": "6.0.6",
-    "brunch": "2.10.7",
-    "clean-css-brunch": "2.10.0",
-    "closure-compiler-brunch": "^0.1.4",
-    "css-brunch": "2.10.0",
-    "elm": "^0.18.0",
-    "elm-brunch": "^0.8.0",
-    "uglify-js-brunch": "^2.1.1"
+    "elm": "0.19.1",
+    "vite": "^3.2.0",
+    "vite-plugin-elm": "^2.7.2"
   }
 }

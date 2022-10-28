@@ -8,7 +8,7 @@
     <meta name="author" content="">
 
     <title>A-Math: Mathematics scrabble</title>
-    <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+    <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>">
     <!-- <link rel="stylesheet" href="https://unpkg.com/tachyons@4.7.0/css/tachyons.min.css"> -->
   </head>
 
@@ -17,6 +17,6 @@
       <%= @inner_content %>
     </main>
 
-    <script src="<%= static_path(@conn, "/js/app.js") %>"></script>
+    <script src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
   </body>
 </html>

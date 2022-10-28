@@ -12,7 +12,7 @@ npm-debug.log
 
 # Static artifacts
 /assets/node_modules
-/assets/elm/elm-stuff
+elm-stuff
 /assets/js/elm.js
 
 # Since we are building assets from assets/,
@@ -30,3 +30,4 @@ npm-debug.log
 # secrets files as long as you replace their contents by environment
 # variables.
 /config/*.secret.exs
+.elixir_ls

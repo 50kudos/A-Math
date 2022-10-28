@@ -89,10 +89,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SelectChoice i j item ->
-            { model | board = Board.markChoice i j item model.board } ! [ Cmd.none ]
+            ({ model | board = Board.markChoice i j item model.board },  Cmd.none )
 
         StartDragging initialPosition ->
-            { model | xy = initialPosition } ! [ Cmd.none ]
+            ({ model | xy = initialPosition },      Cmd.none )
 
         OnDragBy ( dx, dy ) ->
             ( { model | xy = Position (model.xy.x + dx) (model.xy.y + dy) }
@@ -202,7 +202,7 @@ viewChoiceFor position model =
                         Item.viewChoices (SelectChoice i j) DragMsg (choicePos item) [ "x", "÷" ]
 
                     _ ->
-                        Debug.crash "Unexpected selectable item occurs."
+                        text ""
 
         Nothing ->
             text ""

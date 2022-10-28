@@ -1,31 +1,27 @@
-// Brunch automatically concatenates all files in your
-// watched paths. Those paths can be configured at
-// config.paths.watched in "brunch-config.js".
-//
-// However, those files will only be executed if
-// explicitly imported. The only exception are files
-// in vendor, which are never wrapped in imports and
-// therefore are always executed.
-
-// Import dependencies
-//
-// If you no longer want to use a dependency, remember
-// to also remove its path from "config.paths.watched".
 import "phoenix_html"
+import { Socket } from "phoenix"
+import { Elm } from "../elm/Main.elm"
 
-// Import local files
-//
-// Local files can be imported directly using relative
-// paths "./socket" or full ones "web/static/js/socket".
-
-// import socket from "./socket"
-
-import Elm from "./elm"
-
-var elmProgram = document.getElementById("elm-program")
+var elmProgram = document.querySelector("#elm-program")
 if (elmProgram) {
-  Elm.Main.embed(elmProgram, {
-    gameId: elmProgram.dataset.gameId,
-    host: elmProgram.dataset.gameHost
+  const socket = new Socket(`/socket`)
+  const channel = socket.channel(`game_room:${elmProgram.dataset.gameId}`)
+  socket.connect()
+
+  channel.join()
+    .receive("ok", resp => { console.log(resp) })
+    .receive("error", resp => { console.log("err", resp) })
+
+
+  Elm.Main.init({
+    node: elmProgram,
+    flags: {
+      gameId: elmProgram.dataset.gameId,
+      host: elmProgram.dataset.gameHost
+    }
   })
+
+  // Elm.Main.ports.sendMessage.subscribe(function(message) {
+  //   console.log(message)
+  // })
 }

@@ -208,7 +208,7 @@ view choice model toMsg =
         viewItem itemHtml point =
             div [ class "aspect-ratio--object flex flex-column justify-center ph1" ]
                 [ p [ class "db ma0 f7 f4-m f5-l helvetica lh-solid" ] [ itemHtml ]
-                , sub [ class "f8 fw1 moon-gray self-end" ] [ text (toString point) ]
+                , sub [ class "f8 fw1 moon-gray self-end" ] [ text (String.fromInt point) ]
                 ]
 
         starSlot : Html Msg
@@ -283,7 +283,7 @@ encoder { stagingItems } =
         JE.object
             [ ( "items"
               , JE.object
-                    [ ( "boardItems", JE.list <| List.map encodeItem stagingItems )
+                    [ ( "boardItems", JE.list encodeItem stagingItems )
                     ]
               )
             ]

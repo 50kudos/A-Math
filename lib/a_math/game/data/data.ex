@@ -2,6 +2,7 @@ defmodule AMath.Game.Data do
   use Ecto.Schema
 
   import Ecto.Changeset, warn: false
+  alias AMath.Game.Data
   alias AMath.Game.Item
   alias AMath.Game.Data.Deck
 
@@ -26,6 +27,12 @@ defmodule AMath.Game.Data do
       field :j, :integer
       field :point, :integer
       field :value, :string
+    end
+  end
+
+  defimpl Jason.Encoder, for: [Data, Data.Deck, Deck.Item, Data.RestItem, Data.BoardItem] do
+    def encode(value, opts) do
+      Jason.Encode.map(Map.from_struct(value), opts)
     end
   end
 
@@ -61,11 +68,11 @@ defmodule AMath.Game.Data do
   def board_map(board_items) do
     map_fn = fn board_item ->
       %{
-        i: (board_item["i"] || board_item.i),
-        j: (board_item["j"] || board_item.j),
-        item: (board_item["item"] || board_item.item),
-        point: (board_item["point"] || board_item.point),
-        value: (board_item["value"] || board_item.value)
+        i: board_item["i"] || board_item.i,
+        j: board_item["j"] || board_item.j,
+        item: board_item["item"] || board_item.item,
+        point: board_item["point"] || board_item.point,
+        value: board_item["value"] || board_item.value
       }
     end
 
@@ -80,7 +87,7 @@ defmodule AMath.Game.Data do
 
   def compact_items(rand_items) do
     rand_items
-    |> Enum.group_by(&(&1.item))
-    |> Enum.map(fn {k,v} -> {k,Enum.count(v)} end)
+    |> Enum.group_by(& &1.item)
+    |> Enum.map(fn {k, v} -> {k, Enum.count(v)} end)
   end
 end

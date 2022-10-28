@@ -1,13 +1,14 @@
 module Main exposing (main)
 
+import Browser
 import Html exposing (Html, map, div, a, text, section, input, label, small, span, p)
 import Html.Events exposing (onClick)
-import Html.Attributes exposing (class, defaultValue, type_, autofocus, for, id, readonly)
+import Html.Attributes exposing (class, value, type_, autofocus, for, id, readonly)
 import Helper as H
-import Phoenix.Socket as Socket
-import Phoenix.Channel as Channel
-import Phoenix.Push as Pusher
-import Phoenix.Presence as Presence
+-- import Phoenix.Socket as Socket
+-- import Phoenix.Channel as Channel
+-- import Phoenix.Push as Pusher
+-- import Phoenix.Presence as Presence
 import Json.Encode as JE
 import Json.Decode as JD
 import Dict
@@ -16,6 +17,8 @@ import Board
 import Item
 import Draggable
 
+-- port sendMessage : String -> Cmd msg
+-- port messageReceiver : (String -> msg) -> Sub msg
 
 type alias Flags =
     { gameId : String
@@ -25,7 +28,7 @@ type alias Flags =
 
 main : Program Flags Model Msg
 main =
-    Html.programWithFlags
+    Browser.element
         { init = init
         , view = view
         , update = update
@@ -38,8 +41,8 @@ type alias Model =
     , host : String
     , game : Game.Model
     , players : List Player
-    , phxSocket : Socket.Socket Msg
-    , phxPresences : Presence.PresenceState DeckPresence
+    -- , phxSocket : Socket.Socket Msg
+    -- , phxPresences : Presence.PresenceState DeckPresence
     }
 
 
@@ -51,7 +54,7 @@ type Msg
     = GameMsg Game.Msg
     | ItemMsg Item.Msg
     | BoardMsg Board.Msg
-    | PhoenixMsg (Socket.Msg Msg)
+    -- | PhoenixMsg (Socket.Msg Msg)
     | JoinedResponse JE.Value
     | ResetGame
     | Exchange
@@ -61,25 +64,21 @@ type Msg
     | Push
     | ReceiveNewState JE.Value
     | ReceiveNewCommonState JE.Value
-    | ReceivePresence JE.Value
-    | ReceivePresenceDiff JE.Value
+    -- | ReceivePresence JE.Value
+    -- | ReceivePresenceDiff JE.Value
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        ( phxSocket, phxCmd ) =
-            joinChannel flags
-    in
-        { gameId = flags.gameId
+    ({ gameId = flags.gameId
         , host = flags.host
         , game = Game.init
         , players = []
-        , phxSocket = phxSocket
-        , phxPresences = Dict.empty
+
         }
-            ! [ Cmd.map PhoenixMsg phxCmd
-              ]
+        , Cmd.none
+        )
+
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -100,8 +99,8 @@ update msg model =
             JoinedResponse a ->
                 normalUpdate msg model
 
-            PhoenixMsg a ->
-                normalUpdate msg model
+            -- PhoenixMsg a ->
+            --     normalUpdate msg model
 
             ReceiveNewState a ->
                 normalUpdate msg model
@@ -109,11 +108,11 @@ update msg model =
             ReceiveNewCommonState a ->
                 normalUpdate msg model
 
-            ReceivePresence a ->
-                normalUpdate msg model
+            -- ReceivePresence a ->
+            --     normalUpdate msg model
 
-            ReceivePresenceDiff a ->
-                normalUpdate msg model
+            -- ReceivePresenceDiff a ->
+            --     normalUpdate msg model
 
             ItemMsg a ->
                 normalUpdate msg model
@@ -123,8 +122,8 @@ update msg model =
 
 
 normalUpdate : Msg -> Model -> ( Model, Cmd Msg )
-normalUpdate msg model =
-    case msg of
+normalUpdate msg_ model =
+    case msg_ of
         GameMsg msg ->
             let
                 ( game, gameCmd ) =
@@ -138,7 +137,7 @@ normalUpdate msg model =
             in
                 case game.choices of
                     [] ->
-                        { model | game = game } ! [ Cmd.map GameMsg gameCmd ]
+                        ({ model | game = game }, Cmd.map GameMsg gameCmd )
 
                     _ ->
                         case choices of
@@ -146,22 +145,22 @@ normalUpdate msg model =
                                 update Push { model | game = { game | choices = choices } }
 
                             _ ->
-                                { model | game = { game | choices = choices } } ! [ Cmd.map GameMsg gameCmd ]
+                                ({ model | game = { game | choices = choices } },  Cmd.map GameMsg gameCmd )
 
         ItemMsg msg ->
-            { model | game = Game.updateItems msg model.game } ! [ Cmd.none ]
+            ({ model | game = Game.updateItems msg model.game }, Cmd.none )
 
         BoardMsg msg ->
-            { model | game = Game.updateBoard msg model.game } ! [ Cmd.none ]
+            ({ model | game = Game.updateBoard msg model.game }, Cmd.none )
 
-        PhoenixMsg msg ->
-            let
-                ( phxSocket, phxCmd ) =
-                    Socket.update msg model.phxSocket
-            in
-                ( { model | phxSocket = phxSocket }
-                , Cmd.map PhoenixMsg phxCmd
-                )
+        -- PhoenixMsg msg ->
+        --     let
+        --         ( phxSocket, phxCmd ) =
+        --             Socket.update msg model.phxSocket
+        --     in
+        --         ( { model | phxSocket = phxSocket }
+        --         , Cmd.map PhoenixMsg phxCmd
+        --         )
 
         JoinedResponse response ->
             case JD.decodeValue Game.joinedDecoder response of
@@ -200,21 +199,20 @@ normalUpdate msg model =
                                 , endStatus = gameData.common.endStatus
                             }
                     in
-                        { model | game = game_ }
-                            ! [ Cmd.none ]
+                        ({ model | game = game_ },  Cmd.none)
 
                 Err error ->
-                    Debug.log error ( model, Cmd.none )
+                    Debug.log (Debug.toString error) ( model, Cmd.none )
 
         ResetGame ->
             let
                 reqBody =
                     (Board.encoder model.game.board)
 
-                ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems "reset" model.gameId reqBody) model.phxSocket
+                -- ( phxSocket, phxCmd ) =
+                --     Socket.push (patchItems "reset" model.gameId reqBody) model.phxSocket
             in
-                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+                ( model, Cmd.none )
 
         EnqueueChoices forPosition ->
             let
@@ -224,7 +222,7 @@ normalUpdate msg model =
                 updatedGame =
                     { game | choices = forPosition }
             in
-                { model | game = updatedGame } ! [ Cmd.none ]
+                ({ model | game = updatedGame },  Cmd.none)
 
         Exchange ->
             let
@@ -234,23 +232,23 @@ normalUpdate msg model =
                 exchangeEvent =
                     "exchange:" ++ model.game.items.deckId
 
-                ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems exchangeEvent model.gameId reqBody) model.phxSocket
+                -- ( phxSocket, phxCmd ) =
+                --     Socket.push (patchItems exchangeEvent model.gameId reqBody) model.phxSocket
             in
-                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+                ( model  , Cmd.none )
 
         Pass ->
             let
                 reqBody =
-                    JE.list []
+                    []
 
                 passEvent =
                     "pass:" ++ model.game.items.deckId
 
-                ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems passEvent model.gameId reqBody) model.phxSocket
+                -- ( phxSocket, phxCmd ) =
+                --     Socket.push (patchItems passEvent model.gameId reqBody) model.phxSocket
             in
-                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+                ( model, Cmd.none )
 
         Push ->
             let
@@ -260,10 +258,10 @@ normalUpdate msg model =
                 commitEvent =
                     "commit:" ++ model.game.items.deckId
 
-                ( phxSocket, phxCmd ) =
-                    Socket.push (patchItems commitEvent model.gameId reqBody) model.phxSocket
+                -- ( phxSocket, phxCmd ) =
+                --     Socket.push (patchItems commitEvent model.gameId reqBody) model.phxSocket
             in
-                ( { model | phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+                ( model  , Cmd.none )
 
         BatchRecall ->
             let
@@ -276,8 +274,7 @@ normalUpdate msg model =
                         , board = Board.clearStaging game.board
                     }
             in
-                { model | game = game_ }
-                    ! [ Cmd.none ]
+                ({ model | game = game_ },  Cmd.none)
 
         ReceiveNewState response ->
             case JD.decodeValue Game.myStateDecoder response of
@@ -299,10 +296,10 @@ normalUpdate msg model =
                         newGame =
                             { game | items = items_ }
                     in
-                        { model | game = newGame } ! [ Cmd.none ]
+                        ({ model | game = newGame },  Cmd.none)
 
                 Err error ->
-                    Debug.log error ( model, Cmd.none )
+                    Debug.log (Debug.toString error) ( model, Cmd.none )
 
         ReceiveNewCommonState response ->
             case JD.decodeValue Game.commonStateDecoder response of
@@ -337,37 +334,37 @@ normalUpdate msg model =
                                 , endStatus = commonGameData.endStatus
                             }
                     in
-                        { model | game = new_game } ! [ Cmd.none ]
+                        ({ model | game = new_game },  Cmd.none)
 
                 Err error ->
-                    Debug.log error ( model, Cmd.none )
+                    Debug.log (Debug.toString error) ( model, Cmd.none )
 
-        ReceivePresence response ->
-            case JD.decodeValue (Presence.presenceStateDecoder deckPresenceDecoder) response of
-                Ok presenceState ->
-                    let
-                        newPresenceState =
-                            model.phxPresences |> Presence.syncState presenceState
-                    in
-                        ( { model | phxPresences = newPresenceState }, Cmd.none )
+        -- ReceivePresence response ->
+        --     case JD.decodeValue (Presence.presenceStateDecoder deckPresenceDecoder) response of
+        --         Ok presenceState ->
+        --             let
+        --                 newPresenceState =
+        --                     model.phxPresences |> Presence.syncState presenceState
+        --             in
+        --                 ( { model | phxPresences = newPresenceState }, Cmd.none )
 
-                Err error ->
-                    Debug.log error ( model, Cmd.none )
+        --         Err error ->
+        --             Debug.log error ( model, Cmd.none )
 
-        ReceivePresenceDiff response ->
-            case JD.decodeValue (Presence.presenceDiffDecoder deckPresenceDecoder) response of
-                Ok presenceState ->
-                    let
-                        newPresenceState =
-                            model.phxPresences |> Presence.syncDiff presenceState
+        -- ReceivePresenceDiff response ->
+        --     case JD.decodeValue (Presence.presenceDiffDecoder deckPresenceDecoder) response of
+        --         Ok presenceState ->
+        --             let
+        --                 newPresenceState =
+        --                     model.phxPresences |> Presence.syncDiff presenceState
 
-                        players =
-                            Dict.keys newPresenceState |> List.map Player
-                    in
-                        ( { model | phxPresences = newPresenceState, players = players }, Cmd.none )
+        --                 players =
+        --                     Dict.keys newPresenceState |> List.map Player
+        --             in
+        --                 ( { model | phxPresences = newPresenceState, players = players }, Cmd.none )
 
-                Err error ->
-                    Debug.log error ( model, Cmd.none )
+        --         Err error ->
+        --             Debug.log error ( model, Cmd.none )
 
 
 type alias DeckPresence =
@@ -385,32 +382,32 @@ deckPresenceDecoder =
         (JD.field "online_at" JD.string)
 
 
-joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
-joinChannel { gameId, host } =
-    let
-        joinPayload =
-            JE.object [ ( "game_id", JE.string gameId ) ]
+-- joinChannel : Flags -> ( Socket.Socket Msg, Cmd (Socket.Msg Msg) )
+-- joinChannel { gameId, host } =
+--     let
+--         joinPayload =
+--             JE.object [ ( "game_id", JE.string gameId ) ]
 
-        phxSocket =
-            Socket.init ("wss://" ++ host ++ "/socket/websocket")
-                |> Socket.withDebug
-                |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
-                |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
-                |> Socket.on "presence_state" ("game_room:" ++ gameId) ReceivePresence
-                |> Socket.on "presence_diff" ("game_room:" ++ gameId) ReceivePresenceDiff
+--         phxSocket =
+--             Socket.init ("wss://" ++ host ++ "/socket/websocket")
+--                 |> Socket.withDebug
+--                 |> Socket.on "new_state" ("game_room:" ++ gameId) ReceiveNewState
+--                 |> Socket.on "common_state" ("game_room:" ++ gameId) ReceiveNewCommonState
+--                 |> Socket.on "presence_state" ("game_room:" ++ gameId) ReceivePresence
+--                 |> Socket.on "presence_diff" ("game_room:" ++ gameId) ReceivePresenceDiff
 
-        channel =
-            Channel.init ("game_room:" ++ gameId)
-                |> Channel.onJoin JoinedResponse
-                |> Channel.withPayload joinPayload
-    in
-        Socket.join channel phxSocket
+--         channel =
+--             Channel.init ("game_room:" ++ gameId)
+--                 |> Channel.onJoin JoinedResponse
+--                 |> Channel.withPayload joinPayload
+--     in
+--         Socket.join channel phxSocket
 
 
-patchItems : String -> String -> JE.Value -> Pusher.Push Msg
-patchItems event gameId reqBody =
-    Pusher.init event ("game_room:" ++ gameId)
-        |> Pusher.withPayload reqBody
+-- patchItems : String -> String -> JE.Value -> Pusher.Push Msg
+-- patchItems event gameId reqBody =
+--     Pusher.init event ("game_room:" ++ gameId)
+--         |> Pusher.withPayload reqBody
 
 
 beforeSubmit : Game.Model -> Msg
@@ -433,8 +430,8 @@ beforeSubmit model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Socket.listen model.phxSocket PhoenixMsg
-        , Draggable.subscriptions Game.DragMsg model.game.drag |> Sub.map GameMsg
+        [
+        Draggable.subscriptions Game.DragMsg model.game.drag |> Sub.map GameMsg
         ]
 
 
@@ -450,7 +447,7 @@ viewCopyUrl host gameId =
                 , autofocus True
                 , id "game_url"
                 , class "pointer input-reset ba b--black-20 pa2 mb2 db w-100"
-                , defaultValue ("https://" ++ host ++ "/game/" ++ gameId)
+                , value ("https://" ++ host ++ "/game/" ++ gameId)
                 ]
                 []
             , small [ class "f7 black-80 db mb2" ] [ text "Your friend have not been joined the game or they are disconnected." ]
@@ -505,26 +502,26 @@ viewStat game endStatus =
         passingEndDetail : Int -> Maybe Int -> List (Html msg)
         passingEndDetail point deckPoint =
             [ p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Point = " ++ (toString point) ]
+                [ text <| "Point = " ++ (String.fromInt point) ]
             , p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Deck -" ++ (toString <| Maybe.withDefault 0 deckPoint) ]
+                [ text <| "Deck -" ++ (String.fromInt <| Maybe.withDefault 0 deckPoint) ]
             , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
-                [ text (toString <| point - Maybe.withDefault 0 deckPoint) ]
+                [ text (String.fromInt <| point - Maybe.withDefault 0 deckPoint) ]
             ]
 
         deckEndDetail : Int -> Maybe Int -> List (Html msg)
         deckEndDetail point opDeckPoint =
             [ p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Point = " ++ (toString point) ]
+                [ text <| "Point = " ++ (String.fromInt point) ]
             , p [ class "ma0 fw1 f7 blue" ]
-                [ text <| "Bonus +" ++ (toString <| Maybe.withDefault 0 opDeckPoint) ]
+                [ text <| "Bonus +" ++ (String.fromInt <| Maybe.withDefault 0 opDeckPoint) ]
             , p [ class "ma0 pv3 f4 near-white h-100 flex items-center justify-center" ]
-                [ text (toString <| point + Maybe.withDefault 0 opDeckPoint) ]
+                [ text (String.fromInt <| point + Maybe.withDefault 0 opDeckPoint) ]
             ]
 
         endingDetail : Game.EndStatus -> { x | point : Int, deckPoint : Maybe Int } -> { y | point : Int, deckPoint : Maybe Int } -> Html msg
-        endingDetail endStatus aStat bStat =
-            case endStatus of
+        endingDetail endStatus_ aStat bStat =
+            case endStatus_ of
                 Game.PassingEnded ->
                     div [ class "pa2" ] (passingEndDetail aStat.point aStat.deckPoint)
 
@@ -532,7 +529,7 @@ viewStat game endStatus =
                     div [ class "pa2" ] (deckEndDetail aStat.point bStat.deckPoint)
 
                 a ->
-                    Debug.log "Unexpected game ending status" text (toString a)
+                    Debug.log "Unexpected game ending status" text (Debug.toString a)
     in
         [ div [ class "flex flex-column w4 ba b--gray br2 mh3-m mv4-l" ] <|
             [ span [ class "tc f6 pa1 bg-near-white mid-gray br2 br--top" ]
@@ -573,14 +570,14 @@ viewPlaying game =
             [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
                 [ text game.p1Stat.deckName ]
             , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
-                [ text (toString game.p1Stat.point) ]
+                [ text (String.fromInt game.p1Stat.point) ]
             , turnStatus game.myTurn game.items game.p1Stat.deckName
             ]
         , div [ class "flex flex-column h4 ba b--gray br2 mv4-l mh1 mh0-l" ]
             [ span [ class "f6 pv2 bg-near-white mid-gray flex items-center justify-center br2 br--top" ]
                 [ text game.p2Stat.deckName ]
             , p [ class "ma0 f4 near-white h-100 flex items-center justify-center" ]
-                [ text (toString game.p2Stat.point) ]
+                [ text (String.fromInt game.p2Stat.point) ]
             , turnStatus game.myTurn game.items game.p2Stat.deckName
             ]
         ]

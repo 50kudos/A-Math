@@ -105,7 +105,6 @@ updateDeck target model =
             [ prevPicked ] ->
                 model.myItems
                     |> List.Extra.swapAt prevPicked target
-                    |> Maybe.withDefault model.myItems
                     |> List.map (\item -> { item | picked = False })
 
             _ ->
@@ -139,10 +138,9 @@ recallItem msg ( itemStr, point ) model =
                         | myItems =
                             model.myItems
                                 |> List.Extra.swapAt selfIndex targetIndex
-                                |> Maybe.withDefault model.myItems
                                 |> List.Extra.updateAt targetIndex
                                     (\item -> { item | item = itemStr, point = point, moved = False })
-                                |> Maybe.withDefault model.myItems
+
                     }
 
         _ ->
@@ -155,7 +153,7 @@ batchRecall model =
 
 
 myItems : Model -> (Msg -> msg) -> Html msg
-myItems { myItems } toMsg =
+myItems model toMsg =
     let
         tile : Int -> DeckItem -> Html Msg
         tile nth item =
@@ -169,36 +167,36 @@ myItems { myItems } toMsg =
                     , onClick (Pick nth)
                     ]
                     [ span [] [ H.cast item.item ]
-                    , sub [ class "f8 fw5 moon-gray" ] [ text (toString item.point) ]
+                    , sub [ class "f8 fw5 moon-gray" ] [ text (String.fromInt item.point) ]
                     ]
 
         spacetile : Msg -> Html Msg
         spacetile msg =
             div [ class "bg-transparent ba mh1 w2 h2", onClick msg ] []
     in
-        List.indexedMap tile myItems
+        List.indexedMap tile model.myItems
             |> div [ class "flex justify-center items-center flex-auto h2" ]
             |> map toMsg
 
 
 restItems : Model -> Html msg
-restItems { restItems } =
+restItems model =
     let
         tile : RestItem -> Html msg
         tile item =
             div [ class "ma1 flex justify-center items-center" ]
                 [ div [ class "ba b--dark-blue blue w2 h2 flex justify-center items-center" ]
                     [ H.cast item.item ]
-                , span [ class "w1 tc silver pl1" ] [ text (toString item.ea) ]
+                , span [ class "w1 tc silver pl1" ] [ text (String.fromInt item.ea) ]
                 ]
     in
         section [ class "dn flex-ns flex-wrap items-end-l flex-column-l self-start-l mw5-l ma2 ma0-l ph2 ph3-l w-100 vh-50-l" ]
-            (List.map tile restItems)
+            (List.map tile model.restItems)
 
 
 itemChoices : Model -> List String
-itemChoices { restItems } =
-    restItems
+itemChoices model =
+    model.restItems
         |> List.filter (\item -> not <| List.member item.item [ "blank", "+/-", "x/÷" ])
         |> List.map .item
 
@@ -224,14 +222,16 @@ viewChoices msg dragMsg position listA =
 
         translate : String
         translate =
-            "translate(" ++ (toString position.x) ++ "px, " ++ (toString position.y) ++ "px)"
+            "translate(" ++ (String.fromFloat position.x) ++ "px, " ++ (String.fromFloat position.y) ++ "px)"
     in
         case List.length listA of
             2 ->
                 div []
                     [ span
                         ([ class "db absolute bt bb b--near-black bg-yellow z-9999 o-70 h1 pa1"
-                         , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ), ( "width", "141px" ) ]
+                         , style "top" "50%", style "left" "50%" , style "transform" translate
+                         , style "cursor" "move", style "width" "141px"
+
                          ]
                             ++ (Draggable.mouseTrigger position dragMsg)
                             :: (Draggable.touchTriggers position dragMsg)
@@ -241,7 +241,7 @@ viewChoices msg dragMsg position listA =
                         [ class <|
                             "flex justify-center justify-start-ns flex-wrap absolute mw6 "
                                 ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90 pt4"
-                        , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ) ]
+                        , style "top" "50%", style "left" "50%", style "transform" translate
                         ]
                         (List.map shortChoices listA)
                     ]
@@ -250,7 +250,7 @@ viewChoices msg dragMsg position listA =
                 div []
                     [ span
                         ([ class "db absolute bt bb b--near-black bg-light-yellow z-9999 o-70 h1 pa1"
-                         , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ), ( "cursor", "move" ), ( "width", "247px" ) ]
+                         , style "top" "50%", style "left" "50%", style "transform" translate,style "cursor" "move", style "width" "247px"
                          ]
                             ++ (Draggable.mouseTrigger position dragMsg)
                             :: (Draggable.touchTriggers position dragMsg)
@@ -260,10 +260,9 @@ viewChoices msg dragMsg position listA =
                         [ class <|
                             "flex justify-center flex-wrap absolute w5 "
                                 ++ "f7 fw1 ba b--near-black bg-dark-gray2 z-999 o-90 pt4"
-                        , style [ ( "top", "50%" ), ( "left", "50%" ), ( "transform", translate ) ]
-                        ]
+                        ,  style "top" "50%", style "left" "50%", style "transform" translate                                 ]
                         (List.map longChoices listA)
                     ]
 
             _ ->
-                Debug.log "Unexpected list of choices" <| text (toString listA)
+                Debug.log "Unexpected list of choices" <| text (Debug.toString listA)
