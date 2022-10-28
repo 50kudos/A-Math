@@ -26,7 +26,6 @@ if (elmProgram) {
     else presences = resp
 
     const players = Object.values(presences).map(p => p.metas[0])
-    console.log("presence_state", players)
     sendToElm({ type: "presence_state", detail: players })
   })
   channel.on("presence_diff", resp => {
@@ -34,7 +33,6 @@ if (elmProgram) {
     else presences = resp
 
     const players = Object.values(presences).map(p => p.metas[0])
-    console.log("presence_diff", presences)
     sendToElm({ type: "presence_diff", detail: players })
   })
   channel.join()

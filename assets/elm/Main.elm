@@ -327,29 +327,18 @@ normalUpdate msg_ model =
 
 
                 Err error ->
-                    let
-                        _ =
-                            Debug.log "Error: ReceivePresence" error
-                    in
+
                         ( model, Cmd.none )
 
         ReceivePresenceDiff response ->
             case JD.decodeValue deckPresenceDecoder response of
-                Ok presenceState_ ->
-                    let
-                        presenceState =
-                            Debug.log "presenceState" presenceState_
+                Ok presenceState ->
 
-
-                    in
                     ( { model | players = presenceState }, Cmd.none )
 
                 Err error ->
-                    let
-                        _ =
-                            Debug.log "Error: ReceivePresenceDiff" error
-                    in
-                        ( model, Cmd.none )
+                    ( model, Cmd.none )
+
 
         Noop _ ->
             ( model, Cmd.none )
