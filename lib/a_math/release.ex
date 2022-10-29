@@ -1,42 +1,33 @@
 defmodule AMath.Release do
+  @moduledoc """
+  Used for executing DB release tasks when run in production without Mix
+  installed.
+  """
+  @app :a_math
 
-  def ecto_create do
-    Application.load(:a_math)
-    {:ok, _} = Application.ensure_all_started(:ecto)
+  def migrate do
+    ensure_started()
+    load_app()
 
-    repos = Application.get_env(:a_math, :ecto_repos)
-
-    Enum.each(repos, fn repo ->
-      case repo.__adapter__.storage_up(repo.config) do
-        :ok ->
-          IO.puts "created"
-        {:error, :already_up} ->
-          IO.puts "already created"
-        {:error, term} ->
-          raise "error: #{term}"
-      end
-    end)
-
-    :init.stop()
+    for repo <- repos() do
+      {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+    end
   end
 
-  def ecto_migrate do
-    Application.load(:a_math)
-    {:ok, _} = Application.ensure_all_started(:ecto)
-    
-    repos = Application.get_env(:a_math, :ecto_repos)
+  def rollback(repo, version) do
+    load_app()
+    {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :down, to: version))
+  end
 
-    Enum.each(repos, fn repo ->
-      {:ok, _} = repo.__adapter__.ensure_all_started(repo, :temporary)
-      {:ok, _} = repo.start_link(pool_size: 1)
-    end)
+  defp repos do
+    Application.fetch_env!(@app, :ecto_repos)
+  end
 
-    Enum.each(repos, fn repo ->
-      path = Application.app_dir(:a_math, "priv/repo/migrations")
+  defp load_app do
+    Application.load(@app)
+  end
 
-      Ecto.Migrator.run(repo, path, :up, all: true)
-    end)
-
-    :init.stop()
+  defp ensure_started do
+    Application.ensure_all_started(:ssl)
   end
 end

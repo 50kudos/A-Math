@@ -1,7 +1,7 @@
 <div class="flex flex-column justify-center items-center min-vh-100 bg-dark-gray2">
   <article class="pa3 pa5-ns">
     <h1 class="dib f2 f-headline-1 blue">A-Math</h1>
-    <span class="dib f6 dib pa1 blue lh-copy v-base">v0.2-beta</span>
+    <span class="dib f6 dib pa1 blue lh-copy v-base">v1.1</span>
     <p class="fw1 measure lh-copy light-gray">
       A-Math is a simple math scrabble board game, like crossword but with numbers and operators.
       A valid equation is a valid sequence.
@@ -11,7 +11,7 @@
   <%= link to: create_game(@conn), method: :post, class: "f6 link ph3 pv2 mb2 dib white bg-dark-blue hover-bg-blue" do
     "New Game"
   end %>
-  
+
   <footer class="absolute bottom-2 flex justify-between items-center w-90 w-50-l">
     <div class="f6 fw1 near-white">
       <span class="mh1">© <%= DateTime.utc_now().year %></span>
